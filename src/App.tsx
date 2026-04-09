@@ -116,19 +116,6 @@ function AppShell() {
             <span>Settings</span>
           </NavLink>
         </nav>
-
-        <Toaster
-          position="top-center"
-          toastOptions={{
-            style: {
-              background: '#22222e',
-              color: '#f0f0f5',
-              border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: '0.625rem',
-              fontSize: '0.875rem',
-            },
-          }}
-        />
       </div>
     </ProfileProvider>
   )
@@ -138,6 +125,18 @@ export default function App() {
   return (
     <AuthProvider>
       <AppShell />
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          style: {
+            background: '#22222e',
+            color: '#f0f0f5',
+            border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: '0.625rem',
+            fontSize: '0.875rem',
+          },
+        }}
+      />
     </AuthProvider>
   )
 }

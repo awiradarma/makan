@@ -4,6 +4,7 @@ import {
   useEffect,
   useState,
   useCallback,
+  useRef,
   type ReactNode,
 } from 'react'
 import {
@@ -39,6 +40,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [activeProfileId, setActiveProfileId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const isCreatingProfile = useRef(false)
 
   useEffect(() => {
     if (!user) {
@@ -53,7 +55,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       where('members', 'array-contains', user.uid)
     )
 
-    const unsubscribe = onSnapshot(q, (snap) => {
+    const unsubscribe = onSnapshot(q, async (snap) => {
       const data = snap.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
@@ -65,6 +67,26 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       // Auto-select first profile if none selected
       if (!activeProfileId && data.length > 0) {
         setActiveProfileId(data[0].id)
+      }
+
+      // If NO profiles exist and we haven't started creating one yet, create a default
+      if (snap.empty && !isCreatingProfile.current) {
+        isCreatingProfile.current = true
+        console.log('No profiles found for new user, creating default...')
+        try {
+          await addDoc(collection(db, 'profiles'), {
+            label: 'Family Vault',
+            default_currency: 'USD',
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            inbound_token: generateToken('Family Vault'),
+            owner_uid: user.uid,
+            members: [user.uid],
+            created_at: serverTimestamp(),
+          })
+        } catch (err) {
+          console.error('Error creating default profile:', err)
+          isCreatingProfile.current = false // Allow retry on next snapshot if it failed
+        }
       }
 
       setLoading(false)

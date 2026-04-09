@@ -1,8 +1,13 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
   onAuthStateChanged,
+  signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
+  setPersistence,
+  browserLocalPersistence,
   signOut as firebaseSignOut,
   type User,
 } from 'firebase/auth'
@@ -11,7 +16,9 @@ import { auth, googleProvider } from '@/lib/firebase'
 interface AuthContextValue {
   user: User | null
   loading: boolean
-  signIn: () => Promise<void>
+  signInWithGoogle: () => Promise<void>
+  signInWithEmail: (email: string, pass: string) => Promise<void>
+  signUpWithEmail: (email: string, pass: string) => Promise<void>
   signOut: () => Promise<void>
 }
 
@@ -22,6 +29,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Ensure persistence is set
+    setPersistence(auth, browserLocalPersistence).catch(console.error)
+
     // Check for redirect result on mount
     getRedirectResult(auth).catch((err) => {
       console.error('Redirect result error:', err)
@@ -34,8 +44,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return unsubscribe
   }, [])
 
-  const signIn = async () => {
-    await signInWithRedirect(auth, googleProvider)
+  const signInWithGoogle = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider)
+    } catch (err: any) {
+      if (err.code === 'auth/popup-blocked') {
+        await signInWithRedirect(auth, googleProvider)
+      } else {
+        throw err
+      }
+    }
+  }
+
+  const signInWithEmail = async (email: string, pass: string) => {
+    await signInWithEmailAndPassword(auth, email, pass)
+  }
+
+  const signUpWithEmail = async (email: string, pass: string) => {
+    await createUserWithEmailAndPassword(auth, email, pass)
   }
 
   const signOut = async () => {
@@ -43,7 +69,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signOut }}>
+    <AuthContext.Provider
+      value={{ user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut }}
+    >
       {children}
     </AuthContext.Provider>
   )

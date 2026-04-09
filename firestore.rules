@@ -1,0 +1,50 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Profiles — only members can read/write
+    match /profiles/{profileId} {
+      allow read: if request.auth != null
+                  && request.auth.uid in resource.data.members;
+      allow create: if request.auth != null
+                    && request.auth.uid == request.resource.data.owner_uid
+                    && request.auth.uid in request.resource.data.members;
+      allow update: if request.auth != null
+                    && request.auth.uid in resource.data.members;
+      allow delete: if request.auth != null
+                    && request.auth.uid == resource.data.owner_uid;
+    }
+
+    // Orders — scoped to profile membership
+    match /orders/{orderId} {
+      allow read: if request.auth != null
+                  && (resource == null || isProfileMember(resource.data.profile_id));
+      allow create: if request.auth != null
+                    && isProfileMember(request.resource.data.profile_id);
+      allow update: if request.auth != null
+                    && isProfileMember(resource.data.profile_id);
+      allow delete: if request.auth != null
+                    && isProfileMember(resource.data.profile_id);
+    }
+
+    // Restaurants — scoped to profile membership
+    match /restaurants/{restaurantId} {
+      allow read: if request.auth != null
+                  && (resource == null || isProfileMember(resource.data.profile_id));
+      allow create: if request.auth != null
+                    && isProfileMember(request.resource.data.profile_id);
+      allow update: if request.auth != null
+                    && isProfileMember(resource.data.profile_id);
+      allow delete: if request.auth != null
+                    && isProfileMember(resource.data.profile_id);
+    }
+
+    // Help: check if current user is a member of the given profile
+    function isProfileMember(profileId) {
+      return request.auth != null && 
+             exists(/databases/$(database)/documents/profiles/$(profileId)) &&
+             request.auth.uid in get(/databases/$(database)/documents/profiles/$(profileId)).data.members;
+    }
+  }
+}

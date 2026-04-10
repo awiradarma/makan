@@ -67,24 +67,26 @@ export default function OrderDetail() {
     setSaving(true)
 
     try {
-      const updatedData: Partial<Order> = {
+      const firestoreData: any = {
         restaurant_name: restaurantName,
         items: items,
         ordered_at: Timestamp.fromDate(new Date(orderedAt)),
-        updated_at: serverTimestamp() as any,
+        updated_at: serverTimestamp(),
       }
 
       if (confirmReview) {
-        updatedData.status = 'confirmed'
+        firestoreData.status = 'confirmed'
       }
 
-      await updateDoc(doc(db, 'orders', id), updatedData)
+      await updateDoc(doc(db, 'orders', id), firestoreData)
       
-      const fullUpdatedOrder = { 
+      const fullUpdatedOrder: Order = { 
         ...order, 
-        ...updatedData, 
-        ordered_at: new Date(orderedAt) // Ensure it's a Date for the local state
-      } as unknown as Order
+        restaurant_name: restaurantName,
+        items: items,
+        ordered_at: new Date(orderedAt),
+        status: confirmReview ? 'confirmed' : order.status,
+      }
       
       if (confirmReview) {
         await updateFoodItems(fullUpdatedOrder)

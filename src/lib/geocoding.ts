@@ -1,37 +1,87 @@
 /**
+ * Clean an address string to improve Nominatim geocoding success.
+ * Removes unit/suite numbers and specific formatting that confuses the API.
+ */
+function cleanAddress(address: string): string {
+  let cleaned = address;
+  
+  // Remove Suite, Apt, Unit, Ste, #, etc.
+  // Patterns like "Suite 100", "Ste 100", "Apt 5", "Unit B", "#101"
+  cleaned = cleaned.replace(/(suite|ste|apt|atp|unit|room|floor|fl|#)\.?\s*[a-z0-9-]+/gi, '');
+  
+  // Remove Indonesian "No. 123", "Blok A", etc.
+  cleaned = cleaned.replace(/no\.?\s*[0-9-]+/gi, '');
+  cleaned = cleaned.replace(/blok\s*[a-z0-9-]+/gi, '');
+  
+  // Remove multiple spaces and trim
+  cleaned = cleaned.replace(/\s\s+/g, ' ').trim();
+  
+  // Remove trailing/leading punctuation
+  cleaned = cleaned.replace(/^[\s,]+|[\s,]+$/g, '');
+  
+  return cleaned;
+}
+
+/**
  * Geocoding service using OpenStreetMap Nominatim.
  * Note: Subject to usage policy (1 request/second).
  */
-
 export async function geocodeAddress(address: string): Promise<{ lat: number; lng: number } | null> {
   if (!address || !address.trim()) return null
   
-  try {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
-      {
-        headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'MakanFamilyApp/1.0',
-        },
+  const originalAddress = address.trim();
+  const cleanedAddress = cleanAddress(originalAddress);
+  
+  const attemptGeocode = async (query: string) => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
+        {
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'MakanFamilyApp/1.0',
+          },
+        }
+      )
+      
+      if (!response.ok) {
+        console.warn(`Geocoding request failed for "${query}": ${response.statusText}`);
+        return null;
       }
-    )
-    
-    if (!response.ok) {
-      throw new Error(`Geocoding request failed: ${response.statusText}`)
-    }
 
-    const data = await response.json()
-    if (data && data.length > 0) {
-      return {
-        lat: parseFloat(data[0].lat),
-        lng: parseFloat(data[0].lon),
+      const data = await response.json()
+      if (data && data.length > 0) {
+        return {
+          lat: parseFloat(data[0].lat),
+          lng: parseFloat(data[0].lon),
+        }
       }
+    } catch (err) {
+      console.error(`Geocoding error for "${query}":`, err)
     }
-  } catch (err) {
-    console.error('Geocoding error:', err)
+    return null;
   }
-  return null
+
+  // Attempt 1: Original address
+  let result = await attemptGeocode(originalAddress);
+  if (result) return result;
+
+  // Attempt 2: Cleaned address (if different)
+  if (cleanedAddress && cleanedAddress !== originalAddress) {
+    result = await attemptGeocode(cleanedAddress);
+    if (result) return result;
+  }
+
+  // Attempt 3: Street and City/State only (fallback for very specific addresses)
+  const segments = originalAddress.split(',').map(s => s.trim());
+  if (segments.length > 2) {
+    // Try taking the first segment (usually street) and the last two (city/state/zip)
+    const fallbackQuery = [segments[0], segments[segments.length - 1]].join(', ');
+    result = await attemptGeocode(fallbackQuery);
+    if (result) return result;
+  }
+
+  return null;
 }
 
 /**

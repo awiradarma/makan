@@ -3,6 +3,7 @@ import { useProfile } from '@/contexts/ProfileContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { migrateExistingOrdersToFoodItems } from '@/lib/migration'
 import { toast } from 'react-hot-toast'
+import pkg from '../../package.json'
 
 
 export default function Settings() {
@@ -192,6 +193,10 @@ export default function Settings() {
         >
           🔄 Sync Food Items
         </button>
+      </div>
+
+      <div style={{ textAlign: 'center', opacity: 0.3, fontSize: 'var(--font-size-xs)', padding: 'var(--spacing-md)' }}>
+        Version {pkg.version}
       </div>
     </div>
   )

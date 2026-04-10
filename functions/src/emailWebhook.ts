@@ -1,6 +1,6 @@
 import { onRequest } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
-import busboy from "busboy";
+import * as crypto from "crypto";
 import { parseReceiptFromText } from "./parser";
 
 /**
@@ -14,7 +14,7 @@ import { parseReceiptFromText } from "./parser";
  * - html: HTML body
  */
 export const emailWebhook = onRequest(
-  { secrets: ["GEMINI_API_KEY"], invoker: "public" },
+  { secrets: ["GEMINI_API_KEY", "FORWARD_EMAIL_WEBHOOK_SECRET"], invoker: "public" },
   async (req, res) => {
     if (req.method !== "POST") {
       res.status(405).send("Method Not Allowed");
@@ -24,13 +24,52 @@ export const emailWebhook = onRequest(
     const db = admin.firestore();
 
     try {
-      // Parse multipart form data
-      const fields = await parseMultipart(req);
+      // 1. Verify Signature
+      const signature = req.headers["x-webhook-signature"];
+      const secret = process.env.FORWARD_EMAIL_WEBHOOK_SECRET;
 
-      const toAddress = fields["to"] || "";
-      const fromAddress = fields["from"] || "";
-      const subject = fields["subject"] || "";
-      const textBody = fields["text"] || fields["html"] || "";
+      if (!signature || !secret) {
+        console.error("Missing signature or secret");
+        res.status(401).send("Unauthorized");
+        return;
+      }
+
+      // We must use req.rawBody for signature verification as it's the exact payload sent
+      if (!req.rawBody) {
+        console.error("Missing rawBody for verification");
+        res.status(400).send("Bad Request");
+        return;
+      }
+
+      const hmac = crypto.createHmac("sha256", secret);
+      const digest = hmac.update(req.rawBody).digest("hex");
+
+      if (signature !== digest) {
+        console.error("Invalid signature");
+        res.status(401).send("Unauthorized");
+        return;
+      }
+
+      // 2. Parse Webhook Data (ForwardEmail sends JSON by default)
+      const body = req.body;
+      if (!body || typeof body !== "object") {
+        console.error("Invalid body format");
+        res.status(400).send("Invalid body");
+        return;
+      }
+
+      // ForwardEmail.net JSON payload structure:
+      // text, html, headers.to, headers.from, headers.subject
+      const toAddress = body.headers?.to || "";
+      const fromAddress = body.headers?.from || "";
+      const subject = body.subject || body.headers?.subject || "";
+      const textBody = body.text || body.html || "";
+
+      if (!toAddress) {
+        console.error("Missing recipient (To) address");
+        res.status(400).send("Invalid email: missing recipient");
+        return;
+      }
 
       // Extract token from recipient: token@inbound.domain.com or Name <token@inbound.domain.com>
       const tokenMatch = toAddress.match(/(?:<|^)([^@<>\s]+)@/);
@@ -130,37 +169,3 @@ export const emailWebhook = onRequest(
   }
 );
 
-/**
- * Parse multipart/form-data from the request into a fields object.
- */
-function parseMultipart(
-  req: { headers: Record<string, string | string[] | undefined>; rawBody?: Buffer; pipe: (dest: NodeJS.WritableStream) => void }
-): Promise<Record<string, string>> {
-  return new Promise((resolve, reject) => {
-    const fields: Record<string, string> = {};
-
-    const bb = busboy({
-      headers: req.headers as Record<string, string>,
-    });
-
-    bb.on("field", (name: string, val: string) => {
-      fields[name] = val;
-    });
-
-    bb.on("finish", () => {
-      resolve(fields);
-    });
-
-    bb.on("error", (err: Error) => {
-      reject(err);
-    });
-
-    // Firebase Cloud Functions already parses the body, so we need to
-    // write the raw body to busboy
-    if (req.rawBody) {
-      bb.end(req.rawBody);
-    } else {
-      req.pipe(bb);
-    }
-  });
-}

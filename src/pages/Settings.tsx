@@ -146,13 +146,15 @@ export default function Settings() {
                   background: 'var(--color-bg-secondary)',
                   padding: 'var(--spacing-xs) var(--spacing-sm)',
                   borderRadius: 'var(--radius-sm)',
-                  display: 'inline-block'
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 'var(--spacing-xs)'
                 }}
               >
-                📧 {profile.inbound_token}@your-subdomain.com
+                <span>📧 {profile.inbound_token}@[your-domain.com]</span>
               </div>
-              <div style={{ fontSize: '10px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
-                * Replace your-subdomain.com with your SendGrid Inbound domain
+              <div style={{ fontSize: '10px', color: 'var(--color-text-tertiary)', marginTop: '4px', lineHeight: '1.4' }}>
+                Forward receipts to this address. Ensure your domain's TXT record points to the webhook URL.
               </div>
             </div>
           ))}

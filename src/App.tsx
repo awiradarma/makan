@@ -20,7 +20,7 @@ function ProfileSwitcher() {
     <div className="profile-switcher">
       <button className="profile-switcher__button" onClick={() => setOpen(!open)}>
         {activeProfile?.label || 'Select profile'}
-        <span style={{ fontSize: '0.6rem' }}>{open ? '▲' : '▼'}</span>
+        <span style={{ fontSize: '0.6rem', marginLeft: '4px' }}>{open ? '▲' : '▼'}</span>
       </button>
       {open && (
         <div className="profile-switcher__dropdown">
@@ -44,6 +44,50 @@ function ProfileSwitcher() {
   )
 }
 
+function MemberSwitcher() {
+  const { activeProfile, activeMember, setActiveMember } = useProfile()
+  const [open, setOpen] = useState(false)
+
+  const members = activeProfile?.family_members || []
+  if (members.length === 0) return null
+
+  return (
+    <div className="profile-switcher" style={{ marginRight: '8px' }}>
+      <button className="member-switcher" onClick={() => setOpen(!open)}>
+        👤 {activeMember || 'Member'}
+        <span style={{ fontSize: '0.6rem', marginLeft: '4px' }}>{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <div className="profile-switcher__dropdown">
+          {members.map((m) => (
+            <button
+              key={m}
+              className={`profile-switcher__item ${
+                m === activeMember ? 'profile-switcher__item--active' : ''
+              }`}
+              onClick={() => {
+                setActiveMember(m)
+                setOpen(false)
+              }}
+            >
+              {m}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ThemeToggle() {
+  const { theme, toggleTheme } = useProfile()
+  return (
+    <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
+      {theme === 'dark' ? '☀️' : '🌙'}
+    </button>
+  )
+}
+
 function AppShell() {
   const { user, loading } = useAuth()
   const navigate = useNavigate()
@@ -63,12 +107,14 @@ function AppShell() {
       <div className="app-container">
         {/* Top Bar */}
         <header className="top-bar">
-          <div className="top-bar__logo">
+          <div className="top-bar__logo" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
             <span className="top-bar__logo-icon">🍜</span>
-            <span>Makan</span>
+            <span className="hide-mobile">Makan</span>
           </div>
-          <div className="top-bar__actions">
+          <div className="top-bar__actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <MemberSwitcher />
             <ProfileSwitcher />
+            <ThemeToggle />
           </div>
         </header>
 

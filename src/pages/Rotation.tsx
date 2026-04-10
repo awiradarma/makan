@@ -5,6 +5,8 @@ import {
   where,
   orderBy,
   onSnapshot,
+  updateDoc,
+  doc,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useProfile } from '@/contexts/ProfileContext'
@@ -16,9 +18,10 @@ function daysSince(date: Date): number {
 }
 
 export default function Rotation() {
-  const { activeProfile } = useProfile()
+  const { activeProfile, activeMember } = useProfile()
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [showDisliked, setShowDisliked] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -47,9 +50,50 @@ export default function Rotation() {
     return unsubscribe
   }, [activeProfile])
 
-  const filtered = showDisliked
-    ? restaurants
-    : restaurants.filter((r) => !r.is_disliked)
+  const togglePreference = async (restaurantId: string, type: 'faved_by' | 'disliked_by') => {
+    if (!activeMember) return
+
+    const restaurant = restaurants.find((r) => r.id === restaurantId)
+    if (!restaurant) return
+
+    const currentArray = restaurant[type] || []
+    const isPresent = currentArray.includes(activeMember)
+
+    const nextArray = isPresent
+      ? currentArray.filter((m) => m !== activeMember)
+      : [...currentArray, activeMember]
+
+    try {
+      await updateDoc(doc(db, 'restaurants', restaurantId), {
+        [type]: nextArray,
+      })
+    } catch (err) {
+      console.error(`Error toggling ${type}:`, err)
+    }
+  }
+
+  const toggleDislikedGlobal = async (restaurantId: string, currentStatus: boolean) => {
+    try {
+      await updateDoc(doc(db, 'restaurants', restaurantId), {
+        is_disliked: !currentStatus,
+      })
+    } catch (err) {
+      console.error('Error toggling global dislike:', err)
+    }
+  }
+
+  const filtered = restaurants.filter(r => {
+    // Basic visibility filter
+    if (!showDisliked && r.is_disliked) return false
+    
+    // Search filter
+    const query = searchQuery.toLowerCase().trim()
+    if (!query) return true
+    
+    const matchesName = r.name.toLowerCase().includes(query)
+    const matchesTags = r.tags.some(tag => tag.toLowerCase().includes(query))
+    return matchesName || matchesTags
+  })
 
   if (loading) {
     return (
@@ -61,8 +105,22 @@ export default function Rotation() {
 
   return (
     <div className="page-container flex-col gap-xl">
+      {/* Search Bar */}
+      <div className="search-bar">
+        <span className="search-icon">🔍</span>
+        <input
+          type="text"
+          className="search-input"
+          placeholder="Filter restaurants by name or tag..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
+
       <div className="section-header">
-        <h2 className="section-title">Rotation</h2>
+        <h2 className="section-title">
+          {searchQuery ? 'Search Results' : 'Rotation'}
+        </h2>
         <button
           className="btn btn--ghost"
           onClick={() => setShowDisliked(!showDisliked)}
@@ -114,6 +172,39 @@ export default function Rotation() {
                       ))}
                     </div>
                   )}
+                </div>
+
+                <div className="flex-col gap-xs" style={{ minWidth: '80px', alignItems: 'flex-end' }}>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <button
+                      className={`btn btn--icon ${restaurant.faved_by?.includes(activeMember || '') ? 'btn--accent' : 'btn--ghost'}`}
+                      style={{ padding: '8px', fontSize: '1.1rem', background: restaurant.faved_by?.includes(activeMember || '') ? 'var(--color-accent-soft)' : 'transparent' }}
+                      onClick={() => togglePreference(restaurant.id, 'faved_by')}
+                      title={`Like as ${activeMember}`}
+                    >
+                      ❤️
+                    </button>
+                    <button
+                      className={`btn btn--icon ${restaurant.disliked_by?.includes(activeMember || '') ? 'btn--accent' : 'btn--ghost'}`}
+                      style={{ 
+                        padding: '8px', 
+                        fontSize: '1.1rem', 
+                        background: restaurant.disliked_by?.includes(activeMember || '') ? 'rgba(239, 68, 68, 0.1)' : 'transparent',
+                        color: restaurant.disliked_by?.includes(activeMember || '') ? '#ef4444' : 'inherit'
+                      }}
+                      onClick={() => togglePreference(restaurant.id, 'disliked_by')}
+                      title={`Dislike as ${activeMember}`}
+                    >
+                      💔
+                    </button>
+                  </div>
+                  <button
+                    className="btn btn--ghost"
+                    style={{ fontSize: '10px', textTransform: 'uppercase', padding: '4px 8px', color: restaurant.is_disliked ? '#ef4444' : 'var(--color-text-tertiary)' }}
+                    onClick={() => toggleDislikedGlobal(restaurant.id, restaurant.is_disliked)}
+                  >
+                    {restaurant.is_disliked ? 'Un-ban' : 'Ban globally'}
+                  </button>
                 </div>
               </div>
             )

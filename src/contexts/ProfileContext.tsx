@@ -22,8 +22,13 @@ import type { Profile } from '@/types'
 interface ProfileContextValue {
   profiles: Profile[]
   activeProfile: Profile | null
+  activeProfileId: string | null
   setActiveProfileId: (id: string) => void
   createProfile: (label: string, currency: 'USD' | 'IDR', timezone: string) => Promise<string>
+  activeMember: string | null
+  setActiveMember: (name: string | null) => void
+  theme: 'light' | 'dark'
+  toggleTheme: () => void
   loading: boolean
 }
 
@@ -38,9 +43,41 @@ function generateToken(label: string): string {
 export function ProfileProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const [profiles, setProfiles] = useState<Profile[]>([])
-  const [activeProfileId, setActiveProfileId] = useState<string | null>(null)
+  const [activeProfileId, setActiveProfileId] = useState<string | null>(
+    localStorage.getItem('activeProfileId')
+  )
+  const [activeMember, setActiveMemberState] = useState<string | null>(
+    localStorage.getItem('activeMember')
+  )
+  const [theme, setTheme] = useState<'light' | 'dark'>(
+    (localStorage.getItem('theme') as 'light' | 'dark') || 'dark'
+  )
   const [loading, setLoading] = useState(true)
   const isCreatingProfile = useRef(false)
+
+  // Sync theme with document
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    localStorage.setItem('theme', theme)
+  }, [theme])
+
+  const toggleTheme = useCallback(() => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark')
+  }, [])
+
+  const setActiveMember = useCallback((name: string | null) => {
+    setActiveMemberState(name)
+    if (name) {
+      localStorage.setItem('activeMember', name)
+    } else {
+      localStorage.removeItem('activeMember')
+    }
+  }, [])
+
+  const handleSetActiveProfileId = useCallback((id: string) => {
+    setActiveProfileId(id)
+    localStorage.setItem('activeProfileId', id)
+  }, [])
 
   useEffect(() => {
     if (!user) {
@@ -64,9 +101,11 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
       setProfiles(data)
 
-      // Auto-select first profile if none selected
-      if (!activeProfileId && data.length > 0) {
-        setActiveProfileId(data[0].id)
+      // Auto-select first profile if none selected or current not found
+      if (data.length > 0) {
+        if (!activeProfileId || !data.find(p => p.id === activeProfileId)) {
+          handleSetActiveProfileId(data[0].id)
+        }
       }
 
       // If NO profiles exist and we haven't started creating one yet, create a default
@@ -81,11 +120,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
             inbound_token: generateToken('Family Vault'),
             owner_uid: user.uid,
             members: [user.uid],
+            family_members: ['Papa', 'Mama', 'Kids'],
             created_at: serverTimestamp(),
           })
         } catch (err) {
           console.error('Error creating default profile:', err)
-          isCreatingProfile.current = false // Allow retry on next snapshot if it failed
+          isCreatingProfile.current = false
         }
       }
 
@@ -93,9 +133,18 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     })
 
     return unsubscribe
-  }, [user, activeProfileId])
+  }, [user, activeProfileId, handleSetActiveProfileId])
 
   const activeProfile = profiles.find((p) => p.id === activeProfileId) || null
+
+  // Ensure activeMember is valid for current profile
+  useEffect(() => {
+    if (activeProfile && activeProfile.family_members && activeProfile.family_members.length > 0) {
+      if (!activeMember || !activeProfile.family_members.includes(activeMember)) {
+        setActiveMember(activeProfile.family_members[0])
+      }
+    }
+  }, [activeProfile, activeMember, setActiveMember])
 
   const createProfile = useCallback(
     async (label: string, currency: 'USD' | 'IDR', timezone: string) => {
@@ -108,18 +157,30 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         inbound_token: generateToken(label),
         owner_uid: user.uid,
         members: [user.uid],
+        family_members: ['Papa', 'Mama', 'Kids'],
         created_at: serverTimestamp(),
       })
 
-      setActiveProfileId(docRef.id)
+      handleSetActiveProfileId(docRef.id)
       return docRef.id
     },
-    [user]
+    [user, handleSetActiveProfileId]
   )
 
   return (
     <ProfileContext.Provider
-      value={{ profiles, activeProfile, setActiveProfileId, createProfile, loading }}
+      value={{ 
+        profiles, 
+        activeProfile, 
+        activeProfileId,
+        setActiveProfileId: handleSetActiveProfileId, 
+        createProfile, 
+        activeMember,
+        setActiveMember,
+        theme,
+        toggleTheme,
+        loading 
+      }}
     >
       {children}
     </ProfileContext.Provider>

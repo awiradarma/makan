@@ -108,12 +108,16 @@ Phase 1: Foundation & Data Enrichment
    - Migration Utility: Scan existing restaurants and calculate coordinates from their address.
    - Auto-Geocoding: Automatically calculate and store coordinates for new entries (OCR/Email/Form).
 
-Phase 2: Personnel & Individual Preferences
+Phase 2: Personnel, Profiles & UI Expansion
 1. Family Members:
    - Allow multiple "Member" labels under a single Profile (e.g., Papa, Mama, Kids).
-   - Add an "Active Member" switcher in the UI.
+   - Add an "Active Member" switcher in the UI (Top Bar).
 2. Individual Preferences:
    - Track restaurant "Favorite" and "Disliked" status per individual member.
+3. Home Page UI Enhancements:
+   - Compact Stats: Resize and redesign the top stats tiles to be more space-efficient (e.g., a single horizontal scroll or smaller metrics row).
+   - Search & Filter: Add a search bar to the Home page to filter restaurants by name or tag.
+   - Theme Toggle: Add a dark/light mode toggle icon in the Top Bar.
 
 Phase 3: Proximity & Decision Support
 1. Smart Suggestions: Recommend restaurants based on:

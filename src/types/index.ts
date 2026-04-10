@@ -6,6 +6,7 @@ export interface Profile {
   inbound_token: string
   owner_uid: string
   members: string[]
+  family_members?: string[]
   created_at: Date
 }
 
@@ -42,6 +43,8 @@ export interface Restaurant {
   address?: string
   lat?: number
   lng?: number
+  faved_by?: string[]
+  disliked_by?: string[]
 }
 
 export interface FoodItem {
@@ -54,6 +57,8 @@ export interface FoodItem {
   order_count: number
   last_ordered_at: Date
   tags: string[]
+  faved_by?: string[]
+  disliked_by?: string[]
 }
 
 export interface ParsedReceipt {

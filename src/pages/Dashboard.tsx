@@ -34,6 +34,7 @@ export default function Dashboard() {
   const { activeProfile } = useProfile()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     if (!activeProfile) {
@@ -46,7 +47,7 @@ export default function Dashboard() {
       collection(db, 'orders'),
       where('profile_id', '==', activeProfile.id),
       orderBy('ordered_at', 'desc'),
-      limit(20)
+      limit(50)
     )
 
     const unsubscribe = onSnapshot(q, (snap) => {
@@ -62,6 +63,17 @@ export default function Dashboard() {
 
     return unsubscribe
   }, [activeProfile])
+
+  const filteredOrders = orders.filter(order => {
+    const query = searchQuery.toLowerCase().trim()
+    if (!query) return true
+    
+    const matchesName = order.restaurant_name.toLowerCase().includes(query)
+    const matchesTags = order.items.some(item => 
+      item.tags?.some(tag => tag.toLowerCase().includes(query))
+    )
+    return matchesName || matchesTags
+  })
 
   if (loading) {
     return (
@@ -85,29 +97,43 @@ export default function Dashboard() {
   const monthSpend = thisMonth.reduce((sum, o) => sum + o.total_amount, 0)
 
   return (
-    <div className="page-container flex-col gap-xl">
+    <div className="page-container flex-col gap-lg">
+      {/* Search Bar */}
+      <div className="search-bar">
+        <span className="search-icon">🔍</span>
+        <input
+          type="text"
+          className="search-input"
+          placeholder="Search by restaurant or tag..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
+
       {/* Stats */}
-      <div className="stats-row">
-        <div className="card stat-card">
-          <div className="stat-card__value">{thisWeek.length}</div>
-          <div className="stat-card__label">This week</div>
+      <div className="stats-compact">
+        <div className="stat-pill">
+          <div className="stat-pill__value">{thisWeek.length}</div>
+          <div className="stat-pill__label">This week</div>
         </div>
-        <div className="card stat-card">
-          <div className="stat-card__value">{thisMonth.length}</div>
-          <div className="stat-card__label">This month</div>
+        <div className="stat-pill">
+          <div className="stat-pill__value">{thisMonth.length}</div>
+          <div className="stat-pill__label">This month</div>
         </div>
-        <div className="card stat-card">
-          <div className="stat-card__value">
+        <div className="stat-pill">
+          <div className="stat-pill__value">
             {formatCurrency(monthSpend, activeProfile?.default_currency || 'USD')}
           </div>
-          <div className="stat-card__label">Month spend</div>
+          <div className="stat-pill__label">Spent</div>
         </div>
       </div>
 
       {/* Recent Orders */}
       <div>
-        <div className="section-header">
-          <h2 className="section-title">Recent Orders</h2>
+        <div className="section-header" style={{ marginBottom: 'var(--spacing-md)' }}>
+          <h2 className="section-title">
+            {searchQuery ? 'Search Results' : 'Recent Orders'}
+          </h2>
         </div>
 
         {orders.length === 0 ? (
@@ -120,7 +146,7 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="flex-col gap-md">
-            {orders.map((order) => (
+            {filteredOrders.map((order) => (
               <Link
                 key={order.id}
                 to={`/order/${order.id}`}

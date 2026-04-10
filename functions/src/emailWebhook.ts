@@ -65,22 +65,37 @@ export const emailWebhook = onRequest(
       // ForwardEmail.net JSON payload structure is flexible.
       // We check for both lowercase and capitalized keys.
       const headers = body.headers || {};
-      const toAddress =
+
+      // Helper to extract string from header value (which can be string or object)
+      const getString = (val: any): string => {
+        if (!val) return "";
+        if (typeof val === "string") return val;
+        if (typeof val === "object") {
+          // mailparser style: { value: [...], html: "...", text: "..." }
+          if (val.text) return val.text;
+          if (val.value && Array.isArray(val.value) && val.value[0]?.address) {
+            return val.value[0].address;
+          }
+        }
+        return String(val);
+      };
+
+      const toAddress = getString(
         body.to ||
         headers.to ||
         headers.To ||
-        headers["X-Original-To"] ||
-        "";
-      const fromAddress =
+        headers["X-Original-To"]
+      );
+      const fromAddress = getString(
         body.from ||
         headers.from ||
-        headers.From ||
-        "";
-      const subject =
+        headers.From
+      );
+      const subject = getString(
         body.subject ||
         headers.subject ||
-        headers.Subject ||
-        "";
+        headers.Subject
+      );
       const textBody =
         body.text ||
         body.html ||

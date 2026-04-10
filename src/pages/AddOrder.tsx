@@ -13,7 +13,8 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { httpsCallable } from 'firebase/functions'
 import { db, storage, functions } from '@/lib/firebase'
 import { useProfile } from '@/contexts/ProfileContext'
-import type { OrderItem, ParsedReceipt } from '@/types'
+import { updateFoodItems } from '@/lib/foodItems'
+import type { OrderItem, ParsedReceipt, Order } from '@/types'
 
 type Mode = 'choose' | 'photo' | 'manual' | 'review'
 
@@ -129,19 +130,30 @@ export default function AddOrder() {
       const orderedDate = new Date(orderedAt)
 
       // Save the order
-      await addDoc(collection(db, 'orders'), {
+      const orderData: Omit<Order, 'id'> = {
         profile_id: activeProfile.id,
         restaurant_name: restaurantName.trim(),
-        restaurant_address: restaurantAddress.trim() || null,
+        restaurant_address: restaurantAddress.trim() || undefined,
         order_type: orderType,
-        image_url: imageUrl || null,
+        image_url: imageUrl || undefined,
         items: validItems,
         total_amount: totalAmount,
         currency,
+        ordered_at: orderedDate, // This will be converted by Firestore
+        created_at: new Date(),   // This will be converted by Firestore
+        status: orderType === 'Manual' ? 'confirmed' : 'pending_review',
+      }
+
+      const docRef = await addDoc(collection(db, 'orders'), {
+        ...orderData,
         ordered_at: Timestamp.fromDate(orderedDate),
         created_at: serverTimestamp(),
-        status: 'confirmed',
       })
+
+      // If manual, update statistics immediately
+      if (orderData.status === 'confirmed') {
+        await updateFoodItems({ id: docRef.id, ...orderData } as Order)
+      }
 
       // Upsert restaurant
       const restQuery = `${activeProfile.id}_${restaurantName.trim().toLowerCase()}`

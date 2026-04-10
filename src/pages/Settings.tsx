@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { useProfile } from '@/contexts/ProfileContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { migrateExistingOrdersToFoodItems } from '@/lib/migration'
+import { toast } from 'react-hot-toast'
 
 
 export default function Settings() {
@@ -165,6 +167,31 @@ export default function Settings() {
             No profiles yet. Create one to get started!
           </div>
         )}
+      </div>
+
+      {/* Data Administration */}
+      <div className="card flex-col gap-md">
+        <div className="card__title">Data Administration</div>
+        <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-tertiary)' }}>
+          Scan existing orders to populate food item statistics and ratings.
+        </div>
+        <button 
+          className="btn btn--secondary" 
+          disabled={!activeProfile || creating}
+          onClick={async () => {
+            if (!activeProfile) return
+            const loadingToast = toast.loading('Syncing food items...')
+            try {
+              const count = await migrateExistingOrdersToFoodItems(activeProfile.id)
+              toast.success(`Successfully synced ${count} food items!`, { id: loadingToast })
+            } catch (err) {
+              console.error('Sync error:', err)
+              toast.error('Failed to sync food items', { id: loadingToast })
+            }
+          }}
+        >
+          🔄 Sync Food Items
+        </button>
       </div>
     </div>
   )

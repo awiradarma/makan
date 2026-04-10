@@ -12,6 +12,7 @@ export interface Profile {
 export interface OrderItem {
   name: string
   price: number
+  rating?: number
 }
 
 export interface Order {
@@ -38,6 +39,17 @@ export interface Restaurant {
   last_ordered_at: Date
   order_count: number
   address?: string
+}
+
+export interface FoodItem {
+  id: string // ${profile_id}_${restaurant_id}_${item_name_slug}
+  profile_id: string
+  restaurant_id: string
+  restaurant_name: string
+  name: string
+  rating?: number
+  order_count: number
+  last_ordered_at: Date
 }
 
 export interface ParsedReceipt {

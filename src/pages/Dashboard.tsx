@@ -7,6 +7,7 @@ import {
   limit,
   onSnapshot,
 } from 'firebase/firestore'
+import { Link } from 'react-router-dom'
 import { db } from '@/lib/firebase'
 import { useProfile } from '@/contexts/ProfileContext'
 import type { Order } from '@/types'
@@ -120,7 +121,12 @@ export default function Dashboard() {
         ) : (
           <div className="flex-col gap-md">
             {orders.map((order) => (
-              <div key={order.id} className="card order-card">
+              <Link
+                key={order.id}
+                to={`/order/${order.id}`}
+                className="card order-card"
+                style={{ cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}
+              >
                 <div className="order-card__restaurant">{order.restaurant_name}</div>
                 <div className="order-card__meta">
                   <span
@@ -159,6 +165,7 @@ export default function Dashboard() {
                       className="btn btn--icon btn--ghost"
                       style={{ color: 'var(--color-error)', padding: '4px' }}
                       onClick={(e) => {
+                        e.preventDefault();
                         e.stopPropagation();
                         if (window.confirm('Are you sure you want to delete this order?')) {
                           import('firebase/firestore').then(({ doc, deleteDoc }) => {
@@ -172,7 +179,7 @@ export default function Dashboard() {
                     </button>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}

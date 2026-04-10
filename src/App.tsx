@@ -8,6 +8,7 @@ import Dashboard from '@/pages/Dashboard'
 import Rotation from '@/pages/Rotation'
 import AddOrder from '@/pages/AddOrder'
 import Settings from '@/pages/Settings'
+import OrderDetail from '@/pages/OrderDetail'
 
 function ProfileSwitcher() {
   const { profiles, activeProfile, setActiveProfileId } = useProfile()
@@ -76,6 +77,7 @@ function AppShell() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/rotation" element={<Rotation />} />
           <Route path="/add" element={<AddOrder />} />
+          <Route path="/order/:id" element={<OrderDetail />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

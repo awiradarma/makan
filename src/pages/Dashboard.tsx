@@ -153,7 +153,24 @@ export default function Dashboard() {
                 </div>
                 <div className="order-card__total">
                   <span>Total</span>
-                  <span>{formatCurrency(order.total_amount, order.currency)}</span>
+                  <div className="flex-row gap-sm align-center">
+                    <span>{formatCurrency(order.total_amount, order.currency)}</span>
+                    <button
+                      className="btn btn--icon btn--ghost"
+                      style={{ color: 'var(--color-error)', padding: '4px' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm('Are you sure you want to delete this order?')) {
+                          import('firebase/firestore').then(({ doc, deleteDoc }) => {
+                            deleteDoc(doc(db, 'orders', order.id));
+                          });
+                        }
+                      }}
+                      title="Delete order"
+                    >
+                      🗑️
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

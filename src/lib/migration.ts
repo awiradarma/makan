@@ -23,13 +23,23 @@ export async function migrateExistingOrdersToFoodItems(profileId: string) {
   for (const order of orders) {
     if (!order.restaurant_name?.trim()) continue
     if (!order.items || !Array.isArray(order.items)) continue
+    if (!order.profile_id) continue
 
     const restaurantId = `${order.profile_id}_${order.restaurant_name.trim().toLowerCase()}`
     
-    // Ensure ordered_at is a Date for comparison
-    const orderedAt = order.ordered_at instanceof Timestamp 
-      ? order.ordered_at.toDate() 
-      : new Date(order.ordered_at)
+    // Ensure ordered_at is a valid Date
+    let orderedAt: Date
+    if (order.ordered_at instanceof Timestamp) {
+      orderedAt = order.ordered_at.toDate()
+    } else if (order.ordered_at) {
+      orderedAt = new Date(order.ordered_at)
+    } else {
+      orderedAt = new Date(0)
+    }
+
+    if (isNaN(orderedAt.getTime())) {
+      orderedAt = new Date(0)
+    }
 
     for (const item of order.items) {
       if (!item.name?.trim()) continue
@@ -58,18 +68,25 @@ export async function migrateExistingOrdersToFoodItems(profileId: string) {
     }
   }
 
-  // Batch write to food_items
-  const batch = writeBatch(db)
-  for (const [id, data] of Object.entries(foodItemsMap)) {
-    const ref = doc(db, 'food_items', id)
-    batch.set(ref, {
-      ...data,
-      profile_id: profileId,
-      last_ordered_at: Timestamp.fromDate(data.last_ordered_at),
-      updated_at: serverTimestamp(),
-    }, { merge: true })
+  // Batch write to food_items in chunks of 400
+  const items = Object.entries(foodItemsMap)
+  const chunkSize = 400
+  for (let i = 0; i < items.length; i += chunkSize) {
+    const batch = writeBatch(db)
+    const chunk = items.slice(i, i + chunkSize)
+    
+    for (const [id, data] of chunk) {
+      const ref = doc(db, 'food_items', id)
+      batch.set(ref, {
+        ...data,
+        profile_id: profileId,
+        last_ordered_at: Timestamp.fromDate(data.last_ordered_at),
+        updated_at: serverTimestamp(),
+      }, { merge: true })
+    }
+    
+    await batch.commit()
   }
 
-  await batch.commit()
-  return Object.keys(foodItemsMap).length
+  return items.length
 }

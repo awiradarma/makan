@@ -40,6 +40,18 @@ service cloud.firestore {
                     && isProfileMember(resource.data.profile_id);
     }
 
+    // Food Items — scoped to profile membership
+    match /food_items/{foodItemId} {
+      allow read: if request.auth != null
+                  && (resource == null || isProfileMember(resource.data.profile_id));
+      allow create: if request.auth != null
+                    && isProfileMember(request.resource.data.profile_id);
+      allow update: if request.auth != null
+                    && isProfileMember(resource.data.profile_id);
+      allow delete: if request.auth != null
+                    && isProfileMember(resource.data.profile_id);
+    }
+
     // Help: check if current user is a member of the given profile
     function isProfileMember(profileId) {
       return request.auth != null && 

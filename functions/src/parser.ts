@@ -3,8 +3,9 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 export interface ParsedReceipt {
   restaurant_name: string;
   restaurant_address: string | null;
+  restaurant_tags: string[];
   date: string;
-  items: Array<{ name: string; price: number }>;
+  items: Array<{ name: string; price: number; tags: string[] }>;
   total_amount: number;
   currency: "USD" | "IDR";
 }
@@ -14,8 +15,9 @@ Return ONLY valid JSON with this exact schema:
 {
   "restaurant_name": "string",
   "restaurant_address": "string or null",
+  "restaurant_tags": ["string"],
   "date": "YYYY-MM-DD",
-  "items": [{"name": "string", "price": number}],
+  "items": [{"name": "string", "price": number, "tags": ["string"]}],
   "total_amount": number,
   "currency": "USD" or "IDR"
 }
@@ -28,6 +30,8 @@ Rules:
 - If a photo, ignore background noise and focus only on the receipt
 - If date cannot be determined, use the reference date
 - Meticulously look for the restaurant's physical address (street name, city, etc.) and include it in "restaurant_address". If absolutely not found, use null.
+- Identify the cuisine type (e.g., "Thai", "Mexican", "Italian", "Coffee") from the restaurant name and items, and add it to "restaurant_tags" (without #).
+- If specific food item characteristics are obvious (e.g., "spicy", "dessert", "drinks", "vegan"), add them to the item's "tags" list.
 - Return ONLY the JSON object, no markdown formatting, no code blocks`;
 
 function getModel() {

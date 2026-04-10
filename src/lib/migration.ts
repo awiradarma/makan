@@ -1,4 +1,4 @@
-import { collection, getDocs, query, where, writeBatch, doc, Timestamp, serverTimestamp } from 'firebase/firestore'
+import { collection, getDocs, query, where, writeBatch, doc, Timestamp, serverTimestamp, updateDoc } from 'firebase/firestore'
 import { db } from './firebase'
 import { normalizeItemName } from './foodItems'
 import type { Order } from '@/types'
@@ -89,4 +89,30 @@ export async function migrateExistingOrdersToFoodItems(profileId: string) {
   }
 
   return items.length
+}
+
+export async function geocodeExistingRestaurants(profileId: string) {
+  const { geocodeAddress, sleep } = await import('./geocoding')
+  const restaurantsRef = collection(db, 'restaurants')
+  const q = query(restaurantsRef, where('profile_id', '==', profileId))
+  const querySnapshot = await getDocs(q)
+  
+  let successCount = 0
+  for (const restaurantDoc of querySnapshot.docs) {
+    const data = restaurantDoc.data()
+    if (data.address && (!data.lat || !data.lng)) {
+      const coords = await geocodeAddress(data.address)
+      if (coords) {
+        await updateDoc(doc(db, 'restaurants', restaurantDoc.id), {
+          ...coords,
+          updated_at: serverTimestamp(),
+        })
+        successCount++
+      }
+      // Respect Nominatim usage policy (1 request/second)
+      await sleep(1000)
+    }
+  }
+  
+  return successCount
 }

@@ -91,6 +91,7 @@ body {
   line-height: 1.6;
   min-height: 100dvh;
   overflow-x: hidden;
+  overscroll-behavior: none;
 }
 
 a {
@@ -111,6 +112,7 @@ a:hover {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  overscroll-behavior: none;
 }
 
 .page-container {
@@ -553,6 +555,62 @@ a:hover {
 .tag--muted {
   background: rgba(255, 255, 255, 0.06);
   color: var(--color-text-tertiary);
+}
+
+.tag--editable {
+  padding-right: 4px;
+  gap: 4px;
+}
+
+.tag__remove {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  transition: opacity var(--transition-fast);
+}
+
+.tag__remove:hover {
+  opacity: 1;
+}
+
+.tag-input-container {
+  width: 100%;
+}
+
+.tag-input__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  min-height: 42px;
+  align-items: center;
+}
+
+.tag-input__list:focus-within {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
+
+.tag-input__field {
+  background: transparent;
+  border: none;
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  outline: none;
+  flex: 1;
+  min-width: 80px;
+  padding: 2px 4px;
 }
 
 /* =============================================

@@ -94,3 +94,30 @@ Firebase Storage: You'll need to enable a storage bucket to hold the receipt ima
 Gemini 1.5 Flash: Use this model specifically; it's extremely fast and cost-effective for OCR tasks on receipts.
 
 Location Context: Ensure the parser uses the system date as a reference point for "Today" so it can correctly interpret relative dates on receipts (e.g., "Sunday" or "Yesterday").
+
+6. Implementation Phases (New Features)
+
+Phase 1: Foundation & Data Enrichment
+1. UI Polish: Fix layout "wiggle" on mobile touch interactions (overscroll-behavior).
+2. Tagging Engine:
+   - Add `tags` to `food_items`.
+   - UI: Enable tag editing for both Restaurants and Food Items.
+   - Update AI Prompt: "Identify the cuisine type (e.g., #Thai, #Mexican) and add it as a tag."
+3. Geolocation & Migration:
+   - Add `lat` and `lng` to `restaurants`.
+   - Migration Utility: Scan existing restaurants and calculate coordinates from their address.
+   - Auto-Geocoding: Automatically calculate and store coordinates for new entries (OCR/Email/Form).
+
+Phase 2: Personnel & Individual Preferences
+1. Family Members:
+   - Allow multiple "Member" labels under a single Profile (e.g., Papa, Mama, Kids).
+   - Add an "Active Member" switcher in the UI.
+2. Individual Preferences:
+   - Track restaurant "Favorite" and "Disliked" status per individual member.
+
+Phase 3: Proximity & Decision Support
+1. Smart Suggestions: Recommend restaurants based on:
+   - Current user proximity.
+   - Active member's favorites.
+   - Tags matching current cravings.
+2. The Sunday Tradition: "Spinning Wheel" UI to randomly pick a place while honoring favorites and location.

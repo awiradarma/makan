@@ -6,6 +6,7 @@ import {
   doc,
   getDoc,
   setDoc,
+  updateDoc,
   serverTimestamp,
   Timestamp,
 } from 'firebase/firestore'
@@ -14,6 +15,8 @@ import { httpsCallable } from 'firebase/functions'
 import { db, storage, functions } from '@/lib/firebase'
 import { useProfile } from '@/contexts/ProfileContext'
 import { updateFoodItems } from '@/lib/foodItems'
+import { TagInput } from '@/components/TagInput'
+import { geocodeAddress } from '@/lib/geocoding'
 import type { OrderItem, ParsedReceipt, Order } from '@/types'
 
 type Mode = 'choose' | 'photo' | 'manual' | 'review'
@@ -31,7 +34,8 @@ export default function AddOrder() {
   // Parsed / manual data
   const [restaurantName, setRestaurantName] = useState('')
   const [restaurantAddress, setRestaurantAddress] = useState('')
-  const [items, setItems] = useState<OrderItem[]>([{ name: '', price: 0 }])
+  const [restaurantTags, setRestaurantTags] = useState<string[]>([])
+  const [items, setItems] = useState<OrderItem[]>([{ name: '', price: 0, tags: [] }])
   const [totalAmount, setTotalAmount] = useState(0)
   const [currency, setCurrency] = useState<'USD' | 'IDR'>(
     activeProfile?.default_currency || 'USD'
@@ -102,16 +106,12 @@ export default function AddOrder() {
   }
 
   const addItem = () => {
-    setItems([...items, { name: '', price: 0 }])
+    setItems([...items, { name: '', price: 0, tags: [] }])
   }
 
-  const updateItem = (index: number, field: 'name' | 'price', value: string) => {
+  const updateItem = (index: number, field: keyof OrderItem, value: any) => {
     const updated = [...items]
-    if (field === 'price') {
-      updated[index] = { ...updated[index], price: parseFloat(value) || 0 }
-    } else {
-      updated[index] = { ...updated[index], name: value }
-    }
+    updated[index] = { ...updated[index], [field]: value }
     setItems(updated)
   }
 
@@ -160,25 +160,34 @@ export default function AddOrder() {
       const restRef = doc(db, 'restaurants', restQuery)
       const restSnap = await getDoc(restRef)
 
+      const restData: any = {
+        name: restaurantName.trim(),
+        address: restaurantAddress.trim() || null,
+        tags: restaurantTags,
+        last_ordered_at: Timestamp.fromDate(orderedDate),
+        updated_at: serverTimestamp(),
+      }
+
+      // Geocode if address is new or coordinates are missing
+      if (restaurantAddress.trim() && (!restSnap.exists() || !restSnap.data().lat || restSnap.data().address !== restaurantAddress.trim())) {
+        const coords = await geocodeAddress(restaurantAddress.trim())
+        if (coords) {
+          restData.lat = coords.lat
+          restData.lng = coords.lng
+        }
+      }
+
       if (restSnap.exists()) {
-        const data = restSnap.data()
-        await setDoc(
-          restRef,
-          {
-            last_ordered_at: Timestamp.fromDate(orderedDate),
-            order_count: (data.order_count || 0) + 1,
-            address: restaurantAddress.trim() || data.address || null,
-          },
-          { merge: true }
-        )
+        const currentData = restSnap.data()
+        await updateDoc(restRef, {
+          ...restData,
+          order_count: (currentData.order_count || 0) + 1,
+        })
       } else {
         await setDoc(restRef, {
+          ...restData,
           profile_id: activeProfile.id,
-          name: restaurantName.trim(),
-          address: restaurantAddress.trim() || null,
           is_disliked: false,
-          tags: [],
-          last_ordered_at: Timestamp.fromDate(orderedDate),
           order_count: 1,
         })
       }
@@ -354,6 +363,15 @@ export default function AddOrder() {
         </div>
 
         <div className="form-group">
+          <label className="form-label">Restaurant Tags</label>
+          <TagInput 
+            tags={restaurantTags} 
+            onChange={setRestaurantTags} 
+            placeholder="cuisine or vibe tags..." 
+          />
+        </div>
+
+        <div className="form-group">
           <label className="form-label">Date</label>
           <input
             className="form-input"
@@ -384,34 +402,43 @@ export default function AddOrder() {
           </div>
           <div className="flex-col gap-sm">
             {items.map((item, i) => (
-              <div key={i} style={{ display: 'flex', gap: 'var(--spacing-sm)', alignItems: 'center' }}>
-                <input
-                  className="form-input"
-                  type="text"
-                  value={item.name}
-                  onChange={(e) => updateItem(i, 'name', e.target.value)}
-                  placeholder="Item name"
-                  style={{ flex: 2 }}
-                />
-                <input
-                  className="form-input"
-                  type="number"
-                  value={item.price || ''}
-                  onChange={(e) => updateItem(i, 'price', e.target.value)}
-                  placeholder="Price"
-                  style={{ flex: 1 }}
-                  step="0.01"
-                />
-                {items.length > 1 && (
-                  <button
-                    type="button"
-                    className="btn btn--ghost"
-                    onClick={() => removeItem(i)}
-                    style={{ padding: 'var(--spacing-sm)' }}
-                  >
-                    ✕
-                  </button>
-                )}
+              <div key={i} className="card card--glass flex-col gap-sm" style={{ padding: 'var(--spacing-md)' }}>
+                <div style={{ display: 'flex', gap: 'var(--spacing-sm)', alignItems: 'center' }}>
+                  <input
+                    className="form-input"
+                    type="text"
+                    value={item.name}
+                    onChange={(e) => updateItem(i, 'name', e.target.value)}
+                    placeholder="Item name"
+                    style={{ flex: 2 }}
+                  />
+                  <input
+                    className="form-input"
+                    type="number"
+                    value={item.price || ''}
+                    onChange={(e) => updateItem(i, 'price', parseFloat(e.target.value) || 0)}
+                    placeholder="Price"
+                    style={{ flex: 1 }}
+                    step="0.01"
+                  />
+                  {items.length > 1 && (
+                    <button
+                      type="button"
+                      className="btn btn--ghost"
+                      onClick={() => removeItem(i)}
+                      style={{ padding: 'var(--spacing-sm)' }}
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+                <div>
+                  <TagInput 
+                    tags={item.tags || []} 
+                    onChange={(newTags) => updateItem(i, 'tags', newTags)}
+                    placeholder="item tags..." 
+                  />
+                </div>
               </div>
             ))}
           </div>

@@ -193,6 +193,25 @@ export default function Settings() {
         >
           🔄 Sync Food Items
         </button>
+
+        <button 
+          className="btn btn--secondary" 
+          disabled={!activeProfile || creating}
+          onClick={async () => {
+            if (!activeProfile) return
+            const loadingToast = toast.loading('📍 Geocoding restaurants...')
+            try {
+              const { geocodeExistingRestaurants } = await import('@/lib/migration')
+              const count = await geocodeExistingRestaurants(activeProfile.id)
+              toast.success(`Successfully geocoded ${count} restaurants!`, { id: loadingToast })
+            } catch (err) {
+              console.error('Geocoding error:', err)
+              toast.error('Failed to geocode restaurants', { id: loadingToast })
+            }
+          }}
+        >
+          📍 Geocode Existing Restaurants
+        </button>
       </div>
 
       <div style={{ textAlign: 'center', opacity: 0.3, fontSize: 'var(--font-size-xs)', padding: 'var(--spacing-md)' }}>

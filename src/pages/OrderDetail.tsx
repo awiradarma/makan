@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { doc, getDoc, updateDoc, serverTimestamp, Timestamp } from 'firebase/firestore'
+import { doc, getDoc, updateDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore'
 import { toast } from 'react-hot-toast'
 import { db } from '@/lib/firebase'
 import { updateFoodItems } from '@/lib/foodItems'
+import { TagInput } from '@/components/TagInput'
+import { geocodeAddress } from '@/lib/geocoding'
 import type { Order, OrderItem } from '@/types'
 
 function formatCurrency(amount: number, currency: string) {
@@ -22,6 +24,8 @@ export default function OrderDetail() {
 
   // Edit state
   const [restaurantName, setRestaurantName] = useState('')
+  const [restaurantAddress, setRestaurantAddress] = useState('')
+  const [restaurantTags, setRestaurantTags] = useState<string[]>([])
   const [items, setItems] = useState<OrderItem[]>([])
   const [orderedAt, setOrderedAt] = useState('')
 
@@ -40,8 +44,16 @@ export default function OrderDetail() {
           
           setOrder({ ...data, id: docSnap.id, ordered_at: date })
           setRestaurantName(data.restaurant_name)
-          setItems(data.items || [])
+          setRestaurantAddress(data.restaurant_address || '')
+          setItems(data.items?.map(item => ({ ...item, tags: item.tags || [] })) || [])
           setOrderedAt(date.toISOString().split('T')[0])
+
+          // Fetch restaurant tags
+          const restId = `${data.profile_id}_${data.restaurant_name.trim().toLowerCase()}`
+          const restSnap = await getDoc(doc(db, 'restaurants', restId))
+          if (restSnap.exists()) {
+            setRestaurantTags(restSnap.data().tags || [])
+          }
         } else {
           toast.error('Order not found')
           navigate('/')
@@ -69,6 +81,7 @@ export default function OrderDetail() {
     try {
       const firestoreData: any = {
         restaurant_name: restaurantName,
+        restaurant_address: restaurantAddress,
         items: items,
         ordered_at: Timestamp.fromDate(new Date(orderedAt)),
         updated_at: serverTimestamp(),
@@ -80,9 +93,43 @@ export default function OrderDetail() {
 
       await updateDoc(doc(db, 'orders', id), firestoreData)
       
+      // Upsert restaurant info
+      const restId = `${order.profile_id}_${restaurantName.trim().toLowerCase()}`
+      const restRef = doc(db, 'restaurants', restId)
+      const restSnap = await getDoc(restRef)
+      
+      const restData: any = {
+        name: restaurantName,
+        address: restaurantAddress,
+        tags: restaurantTags,
+        updated_at: serverTimestamp(),
+      }
+
+      // Geocode if address has changed or coordinates are missing
+      if (restaurantAddress && (!restSnap.exists() || !restSnap.data().lat || restSnap.data().address !== restaurantAddress)) {
+        const coords = await geocodeAddress(restaurantAddress)
+        if (coords) {
+          restData.lat = coords.lat
+          restData.lng = coords.lng
+        }
+      }
+
+      if (restSnap.exists()) {
+        await updateDoc(restRef, restData)
+      } else {
+        await setDoc(restRef, {
+          ...restData,
+          profile_id: order.profile_id,
+          is_disliked: false,
+          order_count: 1,
+          last_ordered_at: Timestamp.fromDate(new Date(orderedAt)),
+        })
+      }
+
       const fullUpdatedOrder: Order = { 
         ...order, 
         restaurant_name: restaurantName,
+        restaurant_address: restaurantAddress,
         items: items,
         ordered_at: new Date(orderedAt),
         status: confirmReview ? 'confirmed' : order.status,
@@ -147,6 +194,25 @@ export default function OrderDetail() {
         </div>
 
         <div className="form-group">
+          <label className="form-label">Restaurant Address</label>
+          <input
+            className="form-input"
+            value={restaurantAddress}
+            onChange={(e) => setRestaurantAddress(e.target.value)}
+            placeholder="e.g., 123 Main St, Jakarta"
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">Restaurant Tags</label>
+          <TagInput 
+            tags={restaurantTags} 
+            onChange={setRestaurantTags} 
+            placeholder="Add cuisine or vibe tags..."
+          />
+        </div>
+
+        <div className="form-group">
           <label className="form-label">Date</label>
           <input
             className="form-input"
@@ -157,7 +223,7 @@ export default function OrderDetail() {
         </div>
 
         <div className="flex-col gap-md">
-          <label className="form-label">Items & Ratings</label>
+          <label className="form-label">Items, Ratings & Tags</label>
           {items.map((item, i) => (
             <div key={i} className="card card--glass flex-col gap-sm" style={{ padding: 'var(--spacing-md)' }}>
               <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
@@ -202,6 +268,13 @@ export default function OrderDetail() {
                     </button>
                   ))}
                 </div>
+              </div>
+              <div>
+                <TagInput 
+                  tags={item.tags || []} 
+                  onChange={(newTags) => handleUpdateItem(i, 'tags', newTags)}
+                  placeholder="item tags (e.g., #spicy)"
+                />
               </div>
             </div>
           ))}

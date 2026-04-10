@@ -13,6 +13,7 @@ export interface OrderItem {
   name: string
   price: number
   rating?: number
+  tags?: string[]
 }
 
 export interface Order {
@@ -39,6 +40,8 @@ export interface Restaurant {
   last_ordered_at: Date
   order_count: number
   address?: string
+  lat?: number
+  lng?: number
 }
 
 export interface FoodItem {
@@ -50,6 +53,7 @@ export interface FoodItem {
   rating?: number
   order_count: number
   last_ordered_at: Date
+  tags: string[]
 }
 
 export interface ParsedReceipt {

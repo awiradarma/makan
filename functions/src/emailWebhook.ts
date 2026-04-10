@@ -22,21 +22,13 @@ export const emailWebhook = onRequest(
     }
 
     const db = admin.firestore();
-    console.log("Incoming Webhook Headers:", JSON.stringify(req.headers));
-    console.log("Incoming Webhook Body:", JSON.stringify(req.body));
 
     try {
       // 1. Verify Signature (now optional)
       const signature = req.headers["x-webhook-signature"];
       const secret = process.env.FORWARD_EMAIL_WEBHOOK_SECRET;
 
-      if (secret) {
-        if (!signature) {
-          console.error("Missing signature header but secret is configured");
-          res.status(401).send("Unauthorized: Missing signature");
-          return;
-        }
-
+      if (secret && signature) {
         if (!req.rawBody) {
           console.error("Missing rawBody for verification");
           res.status(400).send("Bad Request: Missing rawBody");
@@ -51,6 +43,11 @@ export const emailWebhook = onRequest(
           res.status(401).send("Unauthorized: Invalid signature");
           return;
         }
+        console.log("Signature verified successfully");
+      } else if (secret && !signature) {
+        console.warn(
+          "FORWARD_EMAIL_WEBHOOK_SECRET is set but X-Webhook-Signature header is missing. Skipping verification for now."
+        );
       } else {
         console.warn(
           "FORWARD_EMAIL_WEBHOOK_SECRET is not set. Skipping signature verification."
@@ -59,25 +56,44 @@ export const emailWebhook = onRequest(
 
       // 2. Parse Webhook Data (ForwardEmail sends JSON by default)
       const body = req.body;
-
       if (!body || typeof body !== "object") {
         console.error("Invalid body format");
         res.status(400).send("Invalid body");
         return;
       }
 
-      // ForwardEmail.net JSON payload structure:
-      // text, html, headers.to, headers.from, headers.subject
-      const toAddress = body.headers?.to || "";
-      const fromAddress = body.headers?.from || "";
-      const subject = body.subject || body.headers?.subject || "";
-      const textBody = body.text || body.html || "";
+      // ForwardEmail.net JSON payload structure is flexible.
+      // We check for both lowercase and capitalized keys.
+      const headers = body.headers || {};
+      const toAddress =
+        body.to ||
+        headers.to ||
+        headers.To ||
+        headers["X-Original-To"] ||
+        "";
+      const fromAddress =
+        body.from ||
+        headers.from ||
+        headers.From ||
+        "";
+      const subject =
+        body.subject ||
+        headers.subject ||
+        headers.Subject ||
+        "";
+      const textBody =
+        body.text ||
+        body.html ||
+        headers.text ||
+        "";
 
       if (!toAddress) {
         console.error("Missing recipient (To) address");
         res.status(400).send("Invalid email: missing recipient");
         return;
       }
+
+      console.log(`Processing email to: ${toAddress}, from: ${fromAddress}`);
 
       // Extract token from recipient: token@inbound.domain.com or Name <token@inbound.domain.com>
       const tokenMatch = toAddress.match(/(?:<|^)([^@<>\s]+)@/);

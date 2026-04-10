@@ -15,11 +15,17 @@ export function normalizeItemName(name: string): string {
  */
 export async function updateFoodItems(order: Order) {
   if (order.status !== 'confirmed') return
+  if (!order.restaurant_name?.trim()) return
 
   const restaurantId = `${order.profile_id}_${order.restaurant_name.trim().toLowerCase()}`
   
+  // Ensure ordered_at is a Date for Timestamp.fromDate
+  const orderedDate = order.ordered_at instanceof Timestamp 
+    ? order.ordered_at.toDate() 
+    : new Date(order.ordered_at)
+
   const promises = order.items.map(async (item: OrderItem) => {
-    if (!item.name.trim()) return
+    if (!item.name?.trim()) return
 
     const itemSlug = normalizeItemName(item.name)
     const foodItemId = `${order.profile_id}_${restaurantId}_${itemSlug}`
@@ -30,12 +36,12 @@ export async function updateFoodItems(order: Order) {
       {
         profile_id: order.profile_id,
         restaurant_id: restaurantId,
-        restaurant_name: order.restaurant_name,
+        restaurant_name: order.restaurant_name.trim(),
         name: item.name.trim(),
         // We use the most recent rating if provided
         ...(item.rating !== undefined ? { rating: item.rating } : {}),
         order_count: increment(1),
-        last_ordered_at: Timestamp.fromDate(order.ordered_at),
+        last_ordered_at: Timestamp.fromDate(orderedDate),
         updated_at: serverTimestamp(),
       },
       { merge: true }

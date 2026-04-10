@@ -21,25 +21,33 @@ export async function migrateExistingOrdersToFoodItems(profileId: string) {
   }> = {}
 
   for (const order of orders) {
+    if (!order.restaurant_name?.trim()) continue
+    if (!order.items || !Array.isArray(order.items)) continue
+
     const restaurantId = `${order.profile_id}_${order.restaurant_name.trim().toLowerCase()}`
     
+    // Ensure ordered_at is a Date for comparison
+    const orderedAt = order.ordered_at instanceof Timestamp 
+      ? order.ordered_at.toDate() 
+      : new Date(order.ordered_at)
+
     for (const item of order.items) {
-      if (!item.name.trim()) continue
+      if (!item.name?.trim()) continue
       
       const itemSlug = normalizeItemName(item.name)
       const foodItemId = `${order.profile_id}_${restaurantId}_${itemSlug}`
       
       const current = foodItemsMap[foodItemId] || {
         name: item.name.trim(),
-        restaurant_name: order.restaurant_name,
+        restaurant_name: order.restaurant_name.trim(),
         restaurant_id: restaurantId,
         order_count: 0,
         last_ordered_at: new Date(0)
       }
       
       current.order_count += 1
-      if (order.ordered_at > current.last_ordered_at) {
-        current.last_ordered_at = order.ordered_at
+      if (orderedAt > current.last_ordered_at) {
+        current.last_ordered_at = orderedAt
         // Take the rating from the most recent order if available
         if (item.rating !== undefined) {
           current.rating = item.rating

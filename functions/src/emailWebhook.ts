@@ -14,7 +14,7 @@ import { parseReceiptFromText } from "./parser";
  * - html: HTML body
  */
 export const emailWebhook = onRequest(
-  { secrets: ["GEMINI_API_KEY"], invoker: "public" },
+  { secrets: ["GEMINI_API_KEY", "FORWARD_EMAIL_WEBHOOK_SECRET"], invoker: "public" },
   async (req, res) => {
     if (req.method !== "POST") {
       res.status(405).send("Method Not Allowed");
@@ -57,6 +57,8 @@ export const emailWebhook = onRequest(
 
       // 2. Parse Webhook Data (ForwardEmail sends JSON by default)
       const body = req.body;
+      console.log("Incoming Webhook Body:", JSON.stringify(body));
+
       if (!body || typeof body !== "object") {
         console.error("Invalid body format");
         res.status(400).send("Invalid body");

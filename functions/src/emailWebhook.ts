@@ -22,6 +22,8 @@ export const emailWebhook = onRequest(
     }
 
     const db = admin.firestore();
+    console.log("Incoming Webhook Headers:", JSON.stringify(req.headers));
+    console.log("Incoming Webhook Body:", JSON.stringify(req.body));
 
     try {
       // 1. Verify Signature (now optional)
@@ -57,7 +59,6 @@ export const emailWebhook = onRequest(
 
       // 2. Parse Webhook Data (ForwardEmail sends JSON by default)
       const body = req.body;
-      console.log("Incoming Webhook Body:", JSON.stringify(body));
 
       if (!body || typeof body !== "object") {
         console.error("Invalid body format");

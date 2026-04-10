@@ -14,7 +14,7 @@ import { parseReceiptFromText } from "./parser";
  * - html: HTML body
  */
 export const emailWebhook = onRequest(
-  { secrets: ["GEMINI_API_KEY", "FORWARD_EMAIL_WEBHOOK_SECRET"], invoker: "public" },
+  { secrets: ["GEMINI_API_KEY"], invoker: "public" },
   async (req, res) => {
     if (req.method !== "POST") {
       res.status(405).send("Method Not Allowed");
@@ -24,30 +24,35 @@ export const emailWebhook = onRequest(
     const db = admin.firestore();
 
     try {
-      // 1. Verify Signature
+      // 1. Verify Signature (now optional)
       const signature = req.headers["x-webhook-signature"];
       const secret = process.env.FORWARD_EMAIL_WEBHOOK_SECRET;
 
-      if (!signature || !secret) {
-        console.error("Missing signature or secret");
-        res.status(401).send("Unauthorized");
-        return;
-      }
+      if (secret) {
+        if (!signature) {
+          console.error("Missing signature header but secret is configured");
+          res.status(401).send("Unauthorized: Missing signature");
+          return;
+        }
 
-      // We must use req.rawBody for signature verification as it's the exact payload sent
-      if (!req.rawBody) {
-        console.error("Missing rawBody for verification");
-        res.status(400).send("Bad Request");
-        return;
-      }
+        if (!req.rawBody) {
+          console.error("Missing rawBody for verification");
+          res.status(400).send("Bad Request: Missing rawBody");
+          return;
+        }
 
-      const hmac = crypto.createHmac("sha256", secret);
-      const digest = hmac.update(req.rawBody).digest("hex");
+        const hmac = crypto.createHmac("sha256", secret);
+        const digest = hmac.update(req.rawBody).digest("hex");
 
-      if (signature !== digest) {
-        console.error("Invalid signature");
-        res.status(401).send("Unauthorized");
-        return;
+        if (signature !== digest) {
+          console.error("Invalid signature");
+          res.status(401).send("Unauthorized: Invalid signature");
+          return;
+        }
+      } else {
+        console.warn(
+          "FORWARD_EMAIL_WEBHOOK_SECRET is not set. Skipping signature verification."
+        );
       }
 
       // 2. Parse Webhook Data (ForwardEmail sends JSON by default)

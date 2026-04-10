@@ -80,6 +80,23 @@ export const emailWebhook = onRequest(
         return String(val);
       };
 
+      const messageId = getString(
+        body.messageId ||
+        headers.messageId ||
+        headers["message-id"] ||
+        headers["Message-ID"]
+      );
+
+      if (messageId) {
+        const processedRef = db.collection("processed_emails").doc(messageId);
+        const processedDoc = await processedRef.get();
+        if (processedDoc.exists) {
+          console.log(`Email already processed: ${messageId}. Skipping.`);
+          res.status(200).send("OK (Duplicate)");
+          return;
+        }
+      }
+
       const toAddress = getString(
         body.to ||
         headers.to ||
@@ -108,7 +125,7 @@ export const emailWebhook = onRequest(
         return;
       }
 
-      console.log(`Processing email to: ${toAddress}, from: ${fromAddress}`);
+      console.log(`Processing email to: ${toAddress}, from: ${fromAddress}, Message-ID: ${messageId}`);
 
       // Extract token from recipient: token@inbound.domain.com or Name <token@inbound.domain.com>
       const tokenMatch = toAddress.match(/(?:<|^)([^@<>\s]+)@/);
@@ -154,7 +171,7 @@ export const emailWebhook = onRequest(
         : admin.firestore.Timestamp.now();
 
       // Save the order
-      await db.collection("orders").add({
+      const orderRef = await db.collection("orders").add({
         profile_id: profileId,
         restaurant_name: parsed.restaurant_name,
         restaurant_address: parsed.restaurant_address || null,
@@ -170,6 +187,7 @@ export const emailWebhook = onRequest(
         email_metadata: {
           from: fromAddress,
           subject: subject,
+          message_id: messageId,
         },
       });
 
@@ -197,8 +215,17 @@ export const emailWebhook = onRequest(
         });
       }
 
+      // Record as processed for idempotency
+      if (messageId) {
+        await db.collection("processed_emails").doc(messageId).set({
+          processed_at: admin.firestore.FieldValue.serverTimestamp(),
+          order_id: orderRef.id,
+          profile_id: profileId,
+        });
+      }
+
       console.log(
-        `Parsed email for profile ${profileId}: ${parsed.restaurant_name}`
+        `Parsed email for profile ${profileId}: ${parsed.restaurant_name} (Order: ${orderRef.id})`
       );
       res.status(200).send("OK");
     } catch (error) {

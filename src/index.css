@@ -505,7 +505,8 @@ a:hover {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-top: 1px solid var(--color-border);
-  z-index: 100;
+  z-index: 1000;
+  box-sizing: border-box;
 }
 
 .bottom-nav__item {
@@ -1002,8 +1003,9 @@ a:hover {
   display: flex;
   gap: var(--spacing-sm);
   overflow-x: auto;
-  padding: 4px;
-  padding-bottom: var(--spacing-sm);
+  padding: var(--spacing-xs) 0;
+  margin: 0 calc(var(--spacing-lg) * -1);
+  padding: var(--spacing-xs) var(--spacing-lg);
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -1112,9 +1114,72 @@ a:hover {
    Responsive fine-tuning
    ============================================= */
 
+/* Order Card Enhancements */
+.order-card__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  flex-wrap: wrap;
+}
+
+.order-card__header-collapsible {
+  overflow: hidden;
+  transition: max-height 0.3s ease-in-out, opacity 0.2s ease;
+  margin-bottom: var(--spacing-xs);
+}
+
+.order-card__header-collapsible--collapsed {
+  max-height: 0;
+  opacity: 0;
+  margin-bottom: 0;
+}
+
+.order-card__actions {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.order-card__btn-toggle {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.order-card__btn-toggle:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.btn-pref {
+  padding: 6px;
+  font-size: 1.1rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.btn-pref--active {
+  background: var(--color-accent-soft);
+}
+
+.btn-pref--dislike.btn-pref--active {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
 @media (min-width: 640px) {
   .page-container {
     padding: var(--spacing-2xl);
-    padding-bottom: 100px;
+    padding-bottom: 120px;
   }
 }

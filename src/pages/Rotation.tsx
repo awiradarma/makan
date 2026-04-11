@@ -5,11 +5,10 @@ import {
   where,
   orderBy,
   onSnapshot,
-  updateDoc,
-  doc,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useProfile } from '@/contexts/ProfileContext'
+import { toggleRestaurantPreference, toggleGlobalDislike } from '@/lib/preferences'
 import type { Restaurant } from '@/types'
 
 function daysSince(date: Date): number {
@@ -50,36 +49,14 @@ export default function Rotation() {
     return unsubscribe
   }, [activeProfile])
 
-  const togglePreference = async (restaurantId: string, type: 'faved_by' | 'disliked_by') => {
-    if (!activeMember) return
-
+  const handleTogglePreference = async (restaurantId: string, type: 'faved_by' | 'disliked_by') => {
     const restaurant = restaurants.find((r) => r.id === restaurantId)
-    if (!restaurant) return
-
-    const currentArray = restaurant[type] || []
-    const isPresent = currentArray.includes(activeMember)
-
-    const nextArray = isPresent
-      ? currentArray.filter((m) => m !== activeMember)
-      : [...currentArray, activeMember]
-
-    try {
-      await updateDoc(doc(db, 'restaurants', restaurantId), {
-        [type]: nextArray,
-      })
-    } catch (err) {
-      console.error(`Error toggling ${type}:`, err)
-    }
+    if (!restaurant || !activeMember) return
+    await toggleRestaurantPreference(restaurant, activeMember, type)
   }
 
-  const toggleDislikedGlobal = async (restaurantId: string, currentStatus: boolean) => {
-    try {
-      await updateDoc(doc(db, 'restaurants', restaurantId), {
-        is_disliked: !currentStatus,
-      })
-    } catch (err) {
-      console.error('Error toggling global dislike:', err)
-    }
+  const handleToggleGlobalDislike = async (restaurantId: string, currentStatus: boolean) => {
+    await toggleGlobalDislike(restaurantId, currentStatus)
   }
 
   const filtered = restaurants.filter(r => {
@@ -179,7 +156,7 @@ export default function Rotation() {
                     <button
                       className={`btn btn--icon ${restaurant.faved_by?.includes(activeMember || '') ? 'btn--accent' : 'btn--ghost'}`}
                       style={{ padding: '8px', fontSize: '1.1rem', background: restaurant.faved_by?.includes(activeMember || '') ? 'var(--color-accent-soft)' : 'transparent' }}
-                      onClick={() => togglePreference(restaurant.id, 'faved_by')}
+                      onClick={() => handleTogglePreference(restaurant.id, 'faved_by')}
                       title={`Like as ${activeMember}`}
                     >
                       ❤️
@@ -192,7 +169,7 @@ export default function Rotation() {
                         background: restaurant.disliked_by?.includes(activeMember || '') ? 'rgba(239, 68, 68, 0.1)' : 'transparent',
                         color: restaurant.disliked_by?.includes(activeMember || '') ? '#ef4444' : 'inherit'
                       }}
-                      onClick={() => togglePreference(restaurant.id, 'disliked_by')}
+                      onClick={() => handleTogglePreference(restaurant.id, 'disliked_by')}
                       title={`Dislike as ${activeMember}`}
                     >
                       💔
@@ -201,7 +178,7 @@ export default function Rotation() {
                   <button
                     className="btn btn--ghost"
                     style={{ fontSize: '10px', textTransform: 'uppercase', padding: '4px 8px', color: restaurant.is_disliked ? '#ef4444' : 'var(--color-text-tertiary)' }}
-                    onClick={() => toggleDislikedGlobal(restaurant.id, restaurant.is_disliked)}
+                    onClick={() => handleToggleGlobalDislike(restaurant.id, restaurant.is_disliked)}
                   >
                     {restaurant.is_disliked ? 'Un-ban' : 'Ban globally'}
                   </button>

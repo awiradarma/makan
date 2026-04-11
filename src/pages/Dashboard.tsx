@@ -7,6 +7,7 @@ import {
   limit,
   onSnapshot,
   getDocs,
+  QueryConstraint
 } from 'firebase/firestore'
 import { Link } from 'react-router-dom'
 import { db } from '@/lib/firebase'
@@ -66,11 +67,21 @@ export default function Dashboard() {
 
     fetchRestaurants()
 
-    const q = query(
-      collection(db, 'orders'),
+    const constraints: QueryConstraint[] = [
       where('profile_id', '==', activeProfile.id),
       orderBy('ordered_at', 'desc'),
-      limit(50)
+    ]
+
+    if (showOnlyPending) {
+      constraints.push(where('status', '==', 'pending_review'))
+      constraints.push(limit(200)) // Higher limit for pending reviews
+    } else {
+      constraints.push(limit(50))
+    }
+
+    const q = query(
+      collection(db, 'orders'),
+      ...constraints
     )
 
     const unsubscribe = onSnapshot(q, (snap) => {
@@ -93,7 +104,7 @@ export default function Dashboard() {
     })
 
     return unsubscribe
-  }, [activeProfile])
+  }, [activeProfile, showOnlyPending])
 
   const toggleCard = (id: string, e: React.MouseEvent) => {
     e.preventDefault()

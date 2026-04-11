@@ -193,9 +193,13 @@ export default function OrderDetail() {
           </div>
         )}
 
+        <div className="flex-row justify-between align-center" style={{ borderBottom: isHeaderCollapsed ? 'none' : '1px solid var(--color-border)', paddingBottom: isHeaderCollapsed ? 0 : 'var(--spacing-md)' }}>
+          <h3 style={{ margin: 0, fontSize: 'var(--font-size-xl)' }}>{restaurantName}</h3>
+        </div>
+
         <div className={`order-card__header-collapsible ${isHeaderCollapsed ? 'order-card__header-collapsible--collapsed' : ''}`}>
-          <div className="form-group" style={{ marginBottom: 'var(--spacing-md)' }}>
-            <label className="form-label">Restaurant</label>
+          <div className="form-group" style={{ marginBottom: 'var(--spacing-md)', marginTop: 'var(--spacing-md)' }}>
+            <label className="form-label">Restaurant Name</label>
             <input
               className="form-input"
               value={restaurantName}

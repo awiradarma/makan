@@ -666,20 +666,22 @@ a:hover {
 }
 
 .stat-card {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-sm);
   text-align: center;
+  min-width: 80px;
 }
 
 .stat-card__value {
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-lg);
   font-weight: 700;
   color: var(--color-accent);
 }
 
 .stat-card__label {
-  font-size: var(--font-size-xs);
+  font-size: 10px;
   color: var(--color-text-tertiary);
-  margin-top: var(--spacing-xs);
+  margin-top: 2px;
+  white-space: nowrap;
 }
 
 /* =============================================

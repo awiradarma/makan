@@ -184,7 +184,7 @@ export default function Rotation() {
                     )}
                   </div>
                   {restaurant.address && (
-                    <div className="rotation-card__address" style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)', marginBottom: 'var(--spacing-xs)' }}>
+                    <div className="rotation-card__address">
                       📍 {restaurant.address}
                     </div>
                   )}
@@ -204,24 +204,25 @@ export default function Rotation() {
                   )}
                 </div>
 
-                <div className="flex-row gap-xs align-center" style={{ minWidth: '80px' }}>
+                <div className="preference-controls">
+                  <div className="preference-controls__emojis">
+                    <button
+                      className={`btn-pref ${restaurant.faved_by?.includes(activeMember || '') ? 'btn-pref--active' : ''}`}
+                      onClick={() => handleTogglePreference(restaurant.id, 'faved_by')}
+                      title={`Like as ${activeMember}`}
+                    >
+                      ❤️
+                    </button>
+                    <button
+                      className={`btn-pref btn-pref--dislike ${restaurant.disliked_by?.includes(activeMember || '') ? 'btn-pref--active' : ''}`}
+                      onClick={() => handleTogglePreference(restaurant.id, 'disliked_by')}
+                      title={`Dislike as ${activeMember}`}
+                    >
+                      💔
+                    </button>
+                  </div>
                   <button
-                    className={`btn-pref ${restaurant.faved_by?.includes(activeMember || '') ? 'btn-pref--active' : ''}`}
-                    onClick={() => handleTogglePreference(restaurant.id, 'faved_by')}
-                    title={`Like as ${activeMember}`}
-                  >
-                    ❤️
-                  </button>
-                  <button
-                    className={`btn-pref btn-pref--dislike ${restaurant.disliked_by?.includes(activeMember || '') ? 'btn-pref--active' : ''}`}
-                    onClick={() => handleTogglePreference(restaurant.id, 'disliked_by')}
-                    title={`Dislike as ${activeMember}`}
-                  >
-                    💔
-                  </button>
-                  <button
-                    className="btn btn--ghost"
-                    style={{ fontSize: '10px', textTransform: 'uppercase', padding: '4px 8px', color: restaurant.is_disliked ? '#ef4444' : 'var(--color-text-tertiary)' }}
+                    className={`btn btn--ghost preference-controls__ban-btn ${restaurant.is_disliked ? 'active' : ''}`}
                     onClick={() => handleToggleGlobalDislike(restaurant.id, restaurant.is_disliked)}
                   >
                     {restaurant.is_disliked ? 'Un-ban' : 'Ban globally'}

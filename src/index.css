@@ -928,12 +928,26 @@ a:hover {
   font-weight: 600;
   color: var(--color-text-primary);
   white-space: normal;
-  word-break: break-word;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  hyphens: auto;
+  line-height: 1.3;
 }
 
 .rotation-card__days {
   font-size: var(--font-size-sm);
   color: var(--color-text-tertiary);
+  margin-top: 2px;
+}
+
+.rotation-card__address {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .rotation-card__tags {
@@ -1450,4 +1464,64 @@ input[type="date"].form-input {
 .library-item__rating-badge--personal {
   background: var(--color-accent-soft);
   box-shadow: 0 0 4px var(--color-accent-soft);
+}
+
+/* Preference Controls - Responsive Layout */
+.preference-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-shrink: 0;
+}
+
+.preference-controls__emojis {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.preference-controls__ban-btn {
+  font-size: 10px;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  color: var(--color-text-tertiary);
+  text-align: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.preference-controls__ban-btn.active {
+  color: var(--color-danger);
+}
+
+@media (max-width: 480px) {
+  .rotation-card {
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+  }
+
+  .rotation-card__rank {
+    font-size: var(--font-size-xl);
+    min-width: 24px;
+  }
+
+  .preference-controls {
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+  }
+
+  .preference-controls__emojis {
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+  }
+
+  .preference-controls__ban-btn {
+    font-size: 9px;
+    padding: 2px 4px;
+    opacity: 0.8;
+  }
 }

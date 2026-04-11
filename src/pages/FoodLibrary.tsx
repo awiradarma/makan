@@ -257,21 +257,23 @@ export default function FoodLibrary() {
                       </span>
                     )}
                   </div>
-                  <div className="flex-row align-center gap-xs">
-                    <button 
-                      className={`btn-pref ${restaurant.faved_by?.includes(activeMember || '') ? 'btn-pref--active' : ''}`}
-                      onClick={() => handlePreference(restaurant.id, 'faved_by')}
-                      title={`Like as ${activeMember}`}
-                    >
-                      ❤️
-                    </button>
-                    <button 
-                      className={`btn-pref btn-pref--dislike ${restaurant.disliked_by?.includes(activeMember || '') ? 'btn-pref--active' : ''}`}
-                      onClick={() => handlePreference(restaurant.id, 'disliked_by')}
-                      title={`Dislike as ${activeMember}`}
-                    >
-                      💔
-                    </button>
+                  <div className="preference-controls">
+                    <div className="preference-controls__emojis">
+                      <button 
+                        className={`btn-pref ${restaurant.faved_by?.includes(activeMember || '') ? 'btn-pref--active' : ''}`}
+                        onClick={() => handlePreference(restaurant.id, 'faved_by')}
+                        title={`Like as ${activeMember}`}
+                      >
+                        ❤️
+                      </button>
+                      <button 
+                        className={`btn-pref btn-pref--dislike ${restaurant.disliked_by?.includes(activeMember || '') ? 'btn-pref--active' : ''}`}
+                        onClick={() => handlePreference(restaurant.id, 'disliked_by')}
+                        title={`Dislike as ${activeMember}`}
+                      >
+                        💔
+                      </button>
+                    </div>
                   </div>
                 </div>
                 

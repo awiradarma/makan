@@ -1007,10 +1007,9 @@ a:hover {
 .stats-compact {
   display: flex;
   gap: var(--spacing-sm);
-  overflow-x: auto;
-  padding: var(--spacing-xs) 0;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: var(--spacing-md);
 }
 
 .stats-compact::-webkit-scrollbar {
@@ -1018,8 +1017,8 @@ a:hover {
 }
 
 .stat-pill {
-  flex: 0 0 auto;
-  padding: var(--spacing-md) var(--spacing-lg);
+  flex: 1;
+  padding: var(--spacing-sm) var(--spacing-md);
   background: var(--color-bg-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -1027,7 +1026,7 @@ a:hover {
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
-  min-width: 110px;
+  min-width: 0;
   box-shadow: var(--shadow-sm);
   transition: all var(--transition-fast);
 }

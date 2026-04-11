@@ -8,7 +8,7 @@ import pkg from '../../package.json'
 
 export default function Settings() {
   const { user, signOut } = useAuth()
-  const { profiles, activeProfile, createProfile, setActiveProfileId, updateProfile } = useProfile()
+  const { profiles, activeProfile, createProfile, setActiveProfileId, updateProfile, deleteProfile } = useProfile()
   const [showCreate, setShowCreate] = useState(false)
   const [newLabel, setNewLabel] = useState('')
   const [newCurrency, setNewCurrency] = useState<'USD' | 'IDR'>('USD')
@@ -208,6 +208,29 @@ export default function Settings() {
               </div>
               <div style={{ fontSize: '10px', color: 'var(--color-text-tertiary)', marginTop: '4px', lineHeight: '1.4' }}>
                 Forward receipts to this address. Ensure your domain's TXT record points to the webhook URL.
+              </div>
+
+              {/* Danger Zone */}
+              <div style={{ marginTop: 'var(--spacing-md)', display: 'flex', justifyContent: 'flex-end' }}>
+                <button 
+                  className="btn btn--ghost" 
+                  style={{ color: 'var(--color-danger)', fontSize: 'var(--font-size-xs)', padding: '4px 8px' }}
+                  onClick={async (e) => {
+                    e.stopPropagation()
+                    const confirmed = window.confirm(`Are you absolutely sure you want to delete the profile "${profile.label}"? This cannot be undone.`)
+                    if (confirmed) {
+                      const loadingToast = toast.loading('Deleting profile...')
+                      try {
+                        await deleteProfile(profile.id)
+                        toast.success('Profile deleted', { id: loadingToast })
+                      } catch (err) {
+                        toast.error('Failed to delete profile', { id: loadingToast })
+                      }
+                    }
+                  }}
+                >
+                  Delete Profile
+                </button>
               </div>
             </div>
           ))}

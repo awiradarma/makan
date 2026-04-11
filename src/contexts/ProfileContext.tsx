@@ -15,6 +15,7 @@ import {
   addDoc,
   serverTimestamp,
   updateDoc,
+  deleteDoc,
   doc,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
@@ -32,6 +33,7 @@ interface ProfileContextValue {
   theme: 'light' | 'dark'
   toggleTheme: () => void
   updateProfile: (id: string, updates: Partial<Profile>) => Promise<void>
+  deleteProfile: (id: string) => Promise<void>
   loading: boolean
 }
 
@@ -186,6 +188,19 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const deleteProfile = useCallback(async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'profiles', id))
+      if (activeProfileId === id) {
+        localStorage.removeItem('activeProfileId')
+        setActiveProfileId(null)
+      }
+    } catch (err) {
+      console.error('Error deleting profile:', err)
+      throw err
+    }
+  }, [activeProfileId])
+
   return (
     <ProfileContext.Provider
       value={{ 
@@ -209,6 +224,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         theme,
         toggleTheme,
         updateProfile,
+        deleteProfile,
         loading 
       }}
     >

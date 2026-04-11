@@ -113,10 +113,11 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // If NO profiles exist and we haven't started creating one yet, create a default
-      if (snap.empty && !isCreatingProfile.current) {
+      // If NO profiles exist, we are NOT loading from cache (meaning server confirmed it's empty),
+      // and we haven't started creating one yet, create a default
+      if (snap.empty && !snap.metadata.fromCache && !isCreatingProfile.current) {
         isCreatingProfile.current = true
-        console.log('No profiles found for new user, creating default...')
+        console.log('No profiles found on server for new user, creating default...')
         try {
           await addDoc(collection(db, 'profiles'), {
             label: 'Family Vault',

@@ -1207,15 +1207,24 @@ a:hover {
   align-items: center;
   justify-content: center;
   line-height: 1;
+  filter: grayscale(1);
+  opacity: 0.4;
+}
+
+.btn-pref:hover {
+  filter: grayscale(0.5);
+  opacity: 0.8;
+  background: var(--color-bg-hover);
 }
 
 .btn-pref--active {
-  background: var(--color-accent-soft);
+  filter: none;
+  opacity: 1;
+  background: var(--color-danger-soft) !important;
 }
 
 .btn-pref--dislike.btn-pref--active {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+  background: var(--color-danger-soft) !important;
 }
 
 /* Light Mode Aesthetic Overrides */

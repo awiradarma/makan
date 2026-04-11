@@ -7,6 +7,7 @@ export interface Profile {
   owner_uid: string
   members: string[]
   family_members?: string[]
+  distance_unit?: 'metric' | 'us'
   created_at: Date
 }
 

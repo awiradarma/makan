@@ -4,7 +4,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useProfile } from '@/contexts/ProfileContext'
 import { useLocation } from '@/contexts/LocationContext'
-import { calculateDistance } from '@/lib/geocoding'
+import { calculateDistance, formatDistance } from '@/lib/geocoding'
 import type { Restaurant } from '@/types'
 
 const COLORS = [
@@ -13,7 +13,7 @@ const COLORS = [
 ]
 
 export default function SundayTradition() {
-  const { activeProfile, activeMember } = useProfile()
+  const { activeProfile, activeMember, distanceUnit } = useProfile()
   const { location } = useLocation()
   const navigate = useNavigate()
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -44,10 +44,11 @@ export default function SundayTradition() {
       
       // Proximity filter
       if (maxDistance !== null && location) {
+        const limitKm = distanceUnit === 'us' ? maxDistance / 0.621371 : maxDistance
         inRotation = inRotation.filter(r => {
           if (!r.lat || !r.lng) return false
           const dist = calculateDistance(location.lat, location.lng, r.lat, r.lng)
-          return dist <= maxDistance
+          return dist <= limitKm
         })
       }
 
@@ -156,11 +157,11 @@ export default function SundayTradition() {
             onChange={(e) => setMaxDistance(e.target.value ? Number(e.target.value) : null)}
           >
             <option value="">Any distance</option>
-            <option value="1">{"< 1 km"}</option>
-            <option value="3">{"< 3 km"}</option>
-            <option value="5">{"< 5 km"}</option>
-            <option value="10">{"< 10 km"}</option>
-            <option value="25">{"< 25 km"}</option>
+            <option value="1">{distanceUnit === 'us' ? '< 1 mi' : '< 1 km'}</option>
+            <option value="3">{distanceUnit === 'us' ? '< 3 mi' : '< 3 km'}</option>
+            <option value="5">{distanceUnit === 'us' ? '< 5 mi' : '< 5 km'}</option>
+            <option value="10">{distanceUnit === 'us' ? '< 10 mi' : '< 10 km'}</option>
+            <option value="25">{distanceUnit === 'us' ? '< 25 mi' : '< 25 km'}</option>
           </select>
         </div>
       </div>
@@ -202,7 +203,7 @@ export default function SundayTradition() {
             <div className="winner-card__name">{winner.name}</div>
             {location && winner.lat && winner.lng && (
               <div className="tag tag--accent" style={{ marginTop: '-8px' }}>
-                📍 {calculateDistance(location.lat, location.lng, winner.lat, winner.lng).toFixed(1)} km away
+                📍 {formatDistance(calculateDistance(location.lat, location.lng, winner.lat, winner.lng), distanceUnit)} away
               </div>
             )}
             <div className="flex-row gap-md">

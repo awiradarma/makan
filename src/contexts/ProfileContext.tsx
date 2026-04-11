@@ -34,6 +34,7 @@ interface ProfileContextValue {
   toggleTheme: () => void
   updateProfile: (id: string, updates: Partial<Profile>) => Promise<void>
   deleteProfile: (id: string) => Promise<void>
+  distanceUnit: 'metric' | 'us'
   loading: boolean
 }
 
@@ -127,6 +128,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
             owner_uid: user.uid,
             members: [user.uid],
             family_members: ['Papa', 'Mama', 'Kids'],
+            distance_unit: 'metric',
             created_at: serverTimestamp(),
           })
         } catch (err) {
@@ -164,6 +166,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         owner_uid: user.uid,
         members: [user.uid],
         family_members: ['Papa', 'Mama', 'Kids'],
+        distance_unit: 'metric',
         created_at: serverTimestamp(),
       })
 
@@ -226,6 +229,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         toggleTheme,
         updateProfile,
         deleteProfile,
+        distanceUnit: activeProfile?.distance_unit || 'metric',
         loading 
       }}
     >

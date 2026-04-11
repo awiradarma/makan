@@ -103,3 +103,15 @@ export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
+
+export function kmToMiles(km: number): number {
+  return km * 0.621371
+}
+
+export function formatDistance(km: number, unit: 'metric' | 'us'): string {
+  if (unit === 'us') {
+    const mi = kmToMiles(km)
+    return mi < 0.1 ? '< 0.1 mi' : `${mi.toFixed(1)} mi`
+  }
+  return km < 0.1 ? '< 0.1 km' : `${km.toFixed(1)} km`
+}

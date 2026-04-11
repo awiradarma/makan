@@ -5,13 +5,13 @@ import { useProfile } from '@/contexts/ProfileContext'
 import { useLocation } from '@/contexts/LocationContext'
 import { toggleRestaurantPreference } from '@/lib/preferences'
 import { TagInput } from '@/components/TagInput'
-import { calculateDistance } from '@/lib/geocoding'
+import { calculateDistance, formatDistance } from '@/lib/geocoding'
 import type { FoodItem, Restaurant } from '@/types'
 
 type ViewMode = 'restaurant' | 'item'
 
 export default function FoodLibrary() {
-  const { activeProfile, activeMember } = useProfile()
+  const { activeProfile, activeMember, distanceUnit } = useProfile()
   const { location } = useLocation()
   const [viewMode, setViewMode] = useState<ViewMode>('restaurant')
   const [searchQuery, setSearchQuery] = useState('')
@@ -205,7 +205,7 @@ export default function FoodLibrary() {
                     <h3 className="card__title" style={{ fontSize: 'var(--font-size-lg)', margin: 0 }}>{restaurant.name}</h3>
                     {distance !== undefined && (
                       <span className="tag tag--accent" style={{ fontSize: '0.7rem' }}>
-                        {distance.toFixed(1)} km
+                        {formatDistance(distance, distanceUnit)}
                       </span>
                     )}
                   </div>

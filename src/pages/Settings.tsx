@@ -142,7 +142,35 @@ export default function Settings() {
               
               {profile.id === activeProfile?.id && (
                 <div className="flex-col gap-sm" style={{ marginTop: 'var(--spacing-md)', paddingTop: 'var(--spacing-md)', borderTop: '1px solid var(--color-border)' }}>
-                  <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600 }}>Family Members</div>
+                  <div className="form-group">
+                    <label className="form-label" style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600 }}>Distance Unit</label>
+                    <div className="flex-row gap-sm">
+                      <button
+                        type="button"
+                        className={`btn ${profile.distance_unit !== 'us' ? 'btn--primary' : 'btn--secondary'}`}
+                        style={{ flex: 1, padding: 'var(--spacing-xs) var(--spacing-sm)', fontSize: 'var(--font-size-sm)' }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          updateProfile(profile.id, { distance_unit: 'metric' })
+                        }}
+                      >
+                        Metric (km)
+                      </button>
+                      <button
+                        type="button"
+                        className={`btn ${profile.distance_unit === 'us' ? 'btn--primary' : 'btn--secondary'}`}
+                        style={{ flex: 1, padding: 'var(--spacing-xs) var(--spacing-sm)', fontSize: 'var(--font-size-sm)' }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          updateProfile(profile.id, { distance_unit: 'us' })
+                        }}
+                      >
+                        US (miles)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, marginTop: 'var(--spacing-sm)' }}>Family Members</div>
                   <div className="flex-col gap-xs">
                     {(profile.family_members || ['Papa', 'Mama', 'Kids']).map((member) => (
                       <div key={member} style={{ 

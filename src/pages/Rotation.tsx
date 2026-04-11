@@ -11,7 +11,7 @@ import { db } from '@/lib/firebase'
 import { useProfile } from '@/contexts/ProfileContext'
 import { useLocation } from '@/contexts/LocationContext'
 import { toggleRestaurantPreference, toggleGlobalDislike } from '@/lib/preferences'
-import { calculateDistance } from '@/lib/geocoding'
+import { calculateDistance, formatDistance } from '@/lib/geocoding'
 import type { Restaurant } from '@/types'
 
 function daysSince(date: Date): number {
@@ -20,7 +20,7 @@ function daysSince(date: Date): number {
 }
 
 export default function Rotation() {
-  const { activeProfile, activeMember } = useProfile()
+  const { activeProfile, activeMember, distanceUnit } = useProfile()
   const { location } = useLocation()
   const navigate = useNavigate()
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
@@ -85,7 +85,8 @@ export default function Rotation() {
     // Proximity filter
     if (maxDistance !== null && location && r.lat && r.lng) {
       const dist = calculateDistance(location.lat, location.lng, r.lat, r.lng)
-      if (dist > maxDistance) return false
+      const limitKm = distanceUnit === 'us' ? maxDistance / 0.621371 : maxDistance
+      if (dist > limitKm) return false
     }
 
     return true
@@ -144,11 +145,11 @@ export default function Rotation() {
             onChange={(e) => setMaxDistance(e.target.value ? Number(e.target.value) : null)}
           >
             <option value="">Any distance</option>
-            <option value="1">{"< 1 km"}</option>
-            <option value="3">{"< 3 km"}</option>
-            <option value="5">{"< 5 km"}</option>
-            <option value="10">{"< 10 km"}</option>
-            <option value="25">{"< 25 km"}</option>
+            <option value="1">{distanceUnit === 'us' ? '< 1 mi' : '< 1 km'}</option>
+            <option value="3">{distanceUnit === 'us' ? '< 3 mi' : '< 3 km'}</option>
+            <option value="5">{distanceUnit === 'us' ? '< 5 mi' : '< 5 km'}</option>
+            <option value="10">{distanceUnit === 'us' ? '< 10 mi' : '< 10 km'}</option>
+            <option value="25">{distanceUnit === 'us' ? '< 25 mi' : '< 25 km'}</option>
           </select>
         </div>
       </div>
@@ -178,7 +179,7 @@ export default function Rotation() {
                     {restaurant.name}
                     {location && restaurant.lat && restaurant.lng && (
                       <span className="tag tag--accent" style={{ marginLeft: '8px', fontSize: '0.7rem' }}>
-                        {calculateDistance(location.lat, location.lng, restaurant.lat, restaurant.lng).toFixed(1)} km
+                        {formatDistance(calculateDistance(location.lat, location.lng, restaurant.lat, restaurant.lng), distanceUnit)}
                       </span>
                     )}
                   </div>

@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useProfile } from '@/contexts/ProfileContext'
+import { toggleRestaurantPreference } from '@/lib/preferences'
 import { TagInput } from '@/components/TagInput'
 import type { FoodItem, Restaurant } from '@/types'
 
@@ -58,36 +59,10 @@ export default function FoodLibrary() {
     }
   }
 
-  const handlePreference = async (restaurantId: string, type: 'faved_by' | 'disliked_by', memberName: string) => {
-    try {
-      const rest = restaurants.find(r => r.id === restaurantId)
-      if (!rest) return
-
-      const currentList = rest[type] || []
-      const isRemoving = currentList.includes(memberName)
-      
-      let nextList: string[]
-      if (isRemoving) {
-        nextList = currentList.filter(m => m !== memberName)
-      } else {
-        nextList = [...currentList, memberName]
-      }
-
-      const updates: any = { [type]: nextList }
-
-      // Mutual exclusion: If liking, remove from dislikes. If disliking, remove from likes.
-      if (!isRemoving) {
-        const otherType = type === 'faved_by' ? 'disliked_by' : 'faved_by'
-        const otherList = rest[otherType] || []
-        if (otherList.includes(memberName)) {
-          updates[otherType] = otherList.filter(m => m !== memberName)
-        }
-      }
-
-      await updateDoc(doc(db, 'restaurants', restaurantId), updates)
-    } catch (err) {
-      console.error('Error updating preference:', err)
-    }
+  const handlePreference = async (restaurantId: string, type: 'faved_by' | 'disliked_by') => {
+    const restaurant = restaurants.find((r) => r.id === restaurantId)
+    if (!restaurant || !activeMember) return
+    await toggleRestaurantPreference(restaurant, activeMember, type)
   }
 
   const filteredData = useMemo(() => {
@@ -169,20 +144,18 @@ export default function FoodLibrary() {
                   <h3 className="card__title" style={{ fontSize: 'var(--font-size-lg)', margin: 0 }}>{restaurant.name}</h3>
                   <div className="flex-row align-center gap-xs">
                     <button 
-                      className={`btn-icon ${restaurant.faved_by?.includes(activeMember || '') ? 'active' : ''}`}
-                      onClick={() => activeMember && handlePreference(restaurant.id, 'faved_by', activeMember)}
-                      style={{ padding: '2px 4px', fontSize: '1rem', background: 'none', border: 'none', cursor: 'pointer', opacity: restaurant.faved_by?.includes(activeMember || '') ? 1 : 0.4 }}
-                      title={restaurant.faved_by?.includes(activeMember || '') ? 'Unlike' : 'Like'}
+                      className={`btn-pref ${restaurant.faved_by?.includes(activeMember || '') ? 'btn-pref--active' : ''}`}
+                      onClick={() => handlePreference(restaurant.id, 'faved_by')}
+                      title={`Like as ${activeMember}`}
                     >
-                      {restaurant.faved_by?.includes(activeMember || '') ? '❤️' : '🤍'}
+                      ❤️
                     </button>
                     <button 
-                      className={`btn-icon ${restaurant.disliked_by?.includes(activeMember || '') ? 'active' : ''}`}
-                      onClick={() => activeMember && handlePreference(restaurant.id, 'disliked_by', activeMember)}
-                      style={{ padding: '2px 4px', fontSize: '1rem', background: 'none', border: 'none', cursor: 'pointer', opacity: restaurant.disliked_by?.includes(activeMember || '') ? 1 : 0.4 }}
-                      title={restaurant.disliked_by?.includes(activeMember || '') ? 'Remove dislike' : 'Dislike'}
+                      className={`btn-pref btn-pref--dislike ${restaurant.disliked_by?.includes(activeMember || '') ? 'btn-pref--active' : ''}`}
+                      onClick={() => handlePreference(restaurant.id, 'disliked_by')}
+                      title={`Dislike as ${activeMember}`}
                     >
-                      {restaurant.disliked_by?.includes(activeMember || '') ? '💔' : '🖤'}
+                      💔
                     </button>
                   </div>
                 </div>

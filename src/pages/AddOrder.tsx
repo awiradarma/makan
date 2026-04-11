@@ -133,14 +133,14 @@ export default function AddOrder() {
       const orderData: Omit<Order, 'id'> = {
         profile_id: activeProfile.id,
         restaurant_name: restaurantName.trim(),
-        restaurant_address: restaurantAddress.trim() || undefined,
+        restaurant_address: restaurantAddress.trim() || "",
         order_type: orderType,
-        image_url: imageUrl || undefined,
+        image_url: imageUrl || "",
         items: validItems,
         total_amount: totalAmount,
         currency,
-        ordered_at: orderedDate, // This will be converted by Firestore
-        created_at: new Date(),   // This will be converted by Firestore
+        ordered_at: orderedDate, 
+        created_at: new Date(),
         status: orderType === 'Manual' ? 'confirmed' : 'pending_review',
       }
 
@@ -164,7 +164,6 @@ export default function AddOrder() {
         name: restaurantName.trim(),
         address: restaurantAddress.trim() || null,
         tags: restaurantTags,
-        last_ordered_at: Timestamp.fromDate(orderedDate),
         updated_at: serverTimestamp(),
       }
 
@@ -187,8 +186,8 @@ export default function AddOrder() {
         }
 
         // Only update last_ordered_at if the new order is more recent
-        if (orderedDate < currentLastOrderedAt) {
-          delete updates.last_ordered_at
+        if (orderedDate > currentLastOrderedAt) {
+          updates.last_ordered_at = Timestamp.fromDate(orderedDate)
         }
 
         await updateDoc(restRef, updates)
@@ -198,6 +197,7 @@ export default function AddOrder() {
           profile_id: activeProfile.id,
           is_disliked: false,
           order_count: 1,
+          last_ordered_at: Timestamp.fromDate(orderedDate),
         })
       }
 

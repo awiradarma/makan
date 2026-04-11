@@ -165,30 +165,21 @@ export default function Rotation() {
                   )}
                 </div>
 
-                <div className="flex-col gap-xs" style={{ minWidth: '80px', alignItems: 'flex-end' }}>
-                  <div style={{ display: 'flex', gap: '4px' }}>
-                    <button
-                      className={`btn btn--icon ${restaurant.faved_by?.includes(activeMember || '') ? 'btn--accent' : 'btn--ghost'}`}
-                      style={{ padding: '8px', fontSize: '1.1rem', background: restaurant.faved_by?.includes(activeMember || '') ? 'var(--color-accent-soft)' : 'transparent' }}
-                      onClick={() => handleTogglePreference(restaurant.id, 'faved_by')}
-                      title={`Like as ${activeMember}`}
-                    >
-                      ❤️
-                    </button>
-                    <button
-                      className={`btn btn--icon ${restaurant.disliked_by?.includes(activeMember || '') ? 'btn--accent' : 'btn--ghost'}`}
-                      style={{ 
-                        padding: '8px', 
-                        fontSize: '1.1rem', 
-                        background: restaurant.disliked_by?.includes(activeMember || '') ? 'rgba(239, 68, 68, 0.1)' : 'transparent',
-                        color: restaurant.disliked_by?.includes(activeMember || '') ? '#ef4444' : 'inherit'
-                      }}
-                      onClick={() => handleTogglePreference(restaurant.id, 'disliked_by')}
-                      title={`Dislike as ${activeMember}`}
-                    >
-                      💔
-                    </button>
-                  </div>
+                <div className="flex-row gap-xs" style={{ minWidth: '80px', alignItems: 'flex-center' }}>
+                  <button
+                    className={`btn-pref ${restaurant.faved_by?.includes(activeMember || '') ? 'btn-pref--active' : ''}`}
+                    onClick={() => handleTogglePreference(restaurant.id, 'faved_by')}
+                    title={`Like as ${activeMember}`}
+                  >
+                    ❤️
+                  </button>
+                  <button
+                    className={`btn-pref btn-pref--dislike ${restaurant.disliked_by?.includes(activeMember || '') ? 'btn-pref--active' : ''}`}
+                    onClick={() => handleTogglePreference(restaurant.id, 'disliked_by')}
+                    title={`Dislike as ${activeMember}`}
+                  >
+                    💔
+                  </button>
                   <button
                     className="btn btn--ghost"
                     style={{ fontSize: '10px', textTransform: 'uppercase', padding: '4px 8px', color: restaurant.is_disliked ? '#ef4444' : 'var(--color-text-tertiary)' }}

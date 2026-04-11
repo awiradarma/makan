@@ -242,6 +242,32 @@ export default function Settings() {
         )}
       </div>
 
+      {/* Maintenance */}
+      <div className="card flex-col gap-md">
+        <div className="card__title">Maintenance</div>
+        <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-tertiary)' }}>
+          Recalculate order counts and latest visit dates from your history.
+        </div>
+        <button 
+          className="btn btn--secondary" 
+          disabled={!activeProfile}
+          onClick={async () => {
+            if (!activeProfile) return
+            const loadingToast = toast.loading('Syncing restaurant history...')
+            try {
+              const { syncRestaurantDates } = await import('@/lib/migration')
+              const count = await syncRestaurantDates(activeProfile.id)
+              toast.success(`Successfully synced ${count} restaurants!`, { id: loadingToast })
+            } catch (err) {
+              console.error('Sync error:', err)
+              toast.error('Failed to sync history', { id: loadingToast })
+            }
+          }}
+        >
+          🔄 Sync Restaurant History
+        </button>
+      </div>
+
       <div style={{ textAlign: 'center', opacity: 0.3, fontSize: 'var(--font-size-xs)', padding: 'var(--spacing-md)' }}>
         Version {pkg.version}
       </div>

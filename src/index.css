@@ -1197,16 +1197,25 @@ a:hover {
 
 .btn-pref {
   padding: 6px;
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   background: transparent;
   border: none;
   cursor: pointer;
   border-radius: var(--radius-sm);
   transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .btn-pref--active {
   background: var(--color-accent-soft);
+}
+
+.btn-pref--dislike.btn-pref--active {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
 }
 
 /* Light Mode Aesthetic Overrides */

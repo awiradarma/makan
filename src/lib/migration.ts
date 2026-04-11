@@ -116,3 +116,56 @@ export async function geocodeExistingRestaurants(profileId: string) {
   
   return successCount
 }
+
+export async function syncRestaurantDates(profileId: string) {
+  const ordersRef = collection(db, 'orders')
+  const q = query(ordersRef, where('profile_id', '==', profileId), where('status', '==', 'confirmed'))
+  const querySnapshot = await getDocs(q)
+  
+  const restaurantStats: Record<string, { last_ordered_at: Date, order_count: number, name: string }> = {}
+  
+  querySnapshot.docs.forEach(orderDoc => {
+    const data = orderDoc.data()
+    if (!data.restaurant_name) return
+    
+    const restId = `${profileId}_${data.restaurant_name.trim().toLowerCase()}`
+    
+    let orderedAt: Date
+    if (data.ordered_at instanceof Timestamp) {
+      orderedAt = data.ordered_at.toDate()
+    } else if (data.ordered_at) {
+      orderedAt = new Date(data.ordered_at)
+    } else {
+      return
+    }
+
+    if (!restaurantStats[restId]) {
+      restaurantStats[restId] = {
+        name: data.restaurant_name.trim(),
+        last_ordered_at: orderedAt,
+        order_count: 0
+      }
+    }
+    
+    restaurantStats[restId].order_count++
+    if (orderedAt > restaurantStats[restId].last_ordered_at) {
+      restaurantStats[restId].last_ordered_at = orderedAt
+    }
+  })
+
+  // Update restaurants
+  const batch = writeBatch(db)
+  const entries = Object.entries(restaurantStats)
+  
+  for (const [id, stats] of entries) {
+    const restRef = doc(db, 'restaurants', id)
+    batch.update(restRef, {
+      last_ordered_at: Timestamp.fromDate(stats.last_ordered_at),
+      order_count: stats.order_count,
+      updated_at: serverTimestamp(),
+    })
+  }
+  
+  await batch.commit()
+  return entries.length
+}

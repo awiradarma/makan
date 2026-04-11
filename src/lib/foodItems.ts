@@ -1,4 +1,4 @@
-import { doc, setDoc, increment, serverTimestamp, Timestamp } from 'firebase/firestore'
+import { doc, setDoc, increment, serverTimestamp, Timestamp, getDoc } from 'firebase/firestore'
 import { db } from './firebase'
 import type { Order, OrderItem } from '@/types'
 
@@ -30,6 +30,16 @@ export async function updateFoodItems(order: Order, activeMember?: string | null
     const itemSlug = normalizeItemName(item.name)
     const foodItemId = `${order.profile_id}_${restaurantId}_${itemSlug}`
     const foodItemRef = doc(db, 'food_items', foodItemId)
+    const foodItemSnap = await getDoc(foodItemRef)
+    
+    let shouldUpdateDate = true
+    if (foodItemSnap.exists()) {
+      const currentData = foodItemSnap.data()
+      const currentLastOrderedAt = currentData.last_ordered_at?.toDate() || new Date(0)
+      if (orderedDate <= currentLastOrderedAt) {
+        shouldUpdateDate = false
+      }
+    }
 
     await setDoc(
       foodItemRef,
@@ -47,7 +57,7 @@ export async function updateFoodItems(order: Order, activeMember?: string | null
           }
         } : {}),
         order_count: increment(1),
-        last_ordered_at: Timestamp.fromDate(orderedDate),
+        ...(shouldUpdateDate ? { last_ordered_at: Timestamp.fromDate(orderedDate) } : {}),
         updated_at: serverTimestamp(),
       },
       { merge: true }

@@ -10,6 +10,7 @@ import AddOrder from '@/pages/AddOrder'
 import Settings from '@/pages/Settings'
 import OrderDetail from '@/pages/OrderDetail'
 import FoodLibrary from '@/pages/FoodLibrary'
+import SundayTradition from '@/pages/SundayTradition'
 
 function ProfileSwitcher() {
   const { profiles, activeProfile, setActiveProfileId } = useProfile()
@@ -123,6 +124,7 @@ function AppShell() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/rotation" element={<Rotation />} />
+          <Route path="/tradition" element={<SundayTradition />} />
           <Route path="/library" element={<FoodLibrary />} />
           <Route path="/add" element={<AddOrder />} />
           <Route path="/order/:id" element={<OrderDetail />} />

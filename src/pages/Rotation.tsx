@@ -6,6 +6,7 @@ import {
   orderBy,
   onSnapshot,
 } from 'firebase/firestore'
+import { useNavigate } from 'react-router-dom'
 import { db } from '@/lib/firebase'
 import { useProfile } from '@/contexts/ProfileContext'
 import { toggleRestaurantPreference, toggleGlobalDislike } from '@/lib/preferences'
@@ -18,6 +19,7 @@ function daysSince(date: Date): number {
 
 export default function Rotation() {
   const { activeProfile, activeMember } = useProfile()
+  const navigate = useNavigate()
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [showDisliked, setShowDisliked] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -98,12 +100,22 @@ export default function Rotation() {
         <h2 className="section-title">
           {searchQuery ? 'Search Results' : 'Rotation'}
         </h2>
-        <button
-          className="btn btn--ghost"
-          onClick={() => setShowDisliked(!showDisliked)}
-        >
-          {showDisliked ? 'Hide disliked' : 'Show disliked'}
-        </button>
+        <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
+          <button 
+            className="btn btn--accent" 
+            onClick={() => navigate('/tradition')}
+            style={{ padding: '8px 16px', borderRadius: 'var(--radius-full)', display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
+            <span>🎡</span>
+            <span>Spin</span>
+          </button>
+          <button
+            className="btn btn--ghost"
+            onClick={() => setShowDisliked(!showDisliked)}
+          >
+            {showDisliked ? 'Hide disliked' : 'Show disliked'}
+          </button>
+        </div>
       </div>
 
       {filtered.length === 0 ? (

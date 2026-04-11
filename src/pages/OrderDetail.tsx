@@ -28,6 +28,7 @@ export default function OrderDetail() {
   const [restaurantTags, setRestaurantTags] = useState<string[]>([])
   const [items, setItems] = useState<OrderItem[]>([])
   const [orderedAt, setOrderedAt] = useState('')
+  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(true)
 
   useEffect(() => {
     async function fetchOrder() {
@@ -166,11 +167,19 @@ export default function OrderDetail() {
     <div className="page-container flex-col gap-xl">
       <div className="section-header">
         <h2 className="section-title">Order Details</h2>
-        {order.status === 'pending_review' && (
-          <span className="tag" style={{ background: 'rgba(234,179,8,0.15)', color: '#eab308' }}>
-            Needs review
-          </span>
-        )}
+        <div className="flex-row gap-sm align-center">
+          {order.status === 'pending_review' && (
+            <span className="tag" style={{ background: 'rgba(234,179,8,0.15)', color: '#eab308' }}>
+              Needs review
+            </span>
+          )}
+          <button 
+            className="order-card__btn-toggle"
+            onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
+          >
+            {isHeaderCollapsed ? 'Show Info' : 'Hide Info'}
+          </button>
+        </div>
       </div>
 
       <div className="card flex-col gap-lg">
@@ -184,42 +193,44 @@ export default function OrderDetail() {
           </div>
         )}
 
-        <div className="form-group">
-          <label className="form-label">Restaurant</label>
-          <input
-            className="form-input"
-            value={restaurantName}
-            onChange={(e) => setRestaurantName(e.target.value)}
-          />
-        </div>
+        <div className={`order-card__header-collapsible ${isHeaderCollapsed ? 'order-card__header-collapsible--collapsed' : ''}`}>
+          <div className="form-group" style={{ marginBottom: 'var(--spacing-md)' }}>
+            <label className="form-label">Restaurant</label>
+            <input
+              className="form-input"
+              value={restaurantName}
+              onChange={(e) => setRestaurantName(e.target.value)}
+            />
+          </div>
 
-        <div className="form-group">
-          <label className="form-label">Restaurant Address</label>
-          <input
-            className="form-input"
-            value={restaurantAddress}
-            onChange={(e) => setRestaurantAddress(e.target.value)}
-            placeholder="e.g., 123 Main St, Jakarta"
-          />
-        </div>
+          <div className="form-group" style={{ marginBottom: 'var(--spacing-md)' }}>
+            <label className="form-label">Restaurant Address</label>
+            <input
+              className="form-input"
+              value={restaurantAddress}
+              onChange={(e) => setRestaurantAddress(e.target.value)}
+              placeholder="e.g., 123 Main St, Jakarta"
+            />
+          </div>
 
-        <div className="form-group">
-          <label className="form-label">Restaurant Tags</label>
-          <TagInput 
-            tags={restaurantTags} 
-            onChange={setRestaurantTags} 
-            placeholder="Add cuisine or vibe tags..."
-          />
-        </div>
+          <div className="form-group" style={{ marginBottom: 'var(--spacing-md)' }}>
+            <label className="form-label">Restaurant Tags</label>
+            <TagInput 
+              tags={restaurantTags} 
+              onChange={setRestaurantTags} 
+              placeholder="Add cuisine or vibe tags..."
+            />
+          </div>
 
-        <div className="form-group">
-          <label className="form-label">Date</label>
-          <input
-            className="form-input"
-            type="date"
-            value={orderedAt}
-            onChange={(e) => setOrderedAt(e.target.value)}
-          />
+          <div className="form-group">
+            <label className="form-label">Date</label>
+            <input
+              className="form-input"
+              type="date"
+              value={orderedAt}
+              onChange={(e) => setOrderedAt(e.target.value)}
+            />
+          </div>
         </div>
 
         <div className="flex-col gap-md">

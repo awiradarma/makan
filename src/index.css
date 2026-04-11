@@ -108,6 +108,7 @@ body {
   line-height: 1.6;
   min-height: 100dvh;
   overflow-x: hidden;
+  width: 100vw;
   overscroll-behavior: none;
 }
 
@@ -130,6 +131,8 @@ a:hover {
   display: flex;
   flex-direction: column;
   overscroll-behavior: none;
+  overflow-x: hidden;
+  width: 100%;
 }
 
 .page-container {
@@ -1004,8 +1007,6 @@ a:hover {
   gap: var(--spacing-sm);
   overflow-x: auto;
   padding: var(--spacing-xs) 0;
-  margin: 0 calc(var(--spacing-lg) * -1);
-  padding: var(--spacing-xs) var(--spacing-lg);
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -1172,9 +1173,28 @@ a:hover {
   background: var(--color-accent-soft);
 }
 
-.btn-pref--dislike.btn-pref--active {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+/* Light Mode Aesthetic Overrides */
+[data-theme='light'] .card--glass {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme='light'] .form-input,
+[data-theme='light'] .form-select,
+[data-theme='light'] .form-textarea,
+[data-theme='light'] .tag-input__list {
+  background: #ffffff;
+}
+
+[data-theme='light'] .order-card__item {
+  color: var(--color-text-secondary);
+}
+
+/* Specific Fixes */
+input[type="date"].form-input {
+  width: 100%;
+  max-width: 100%;
 }
 
 @media (min-width: 640px) {

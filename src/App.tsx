@@ -19,8 +19,8 @@ function ProfileSwitcher() {
   return (
     <div className="profile-switcher">
       <button className="profile-switcher__button" onClick={() => setOpen(!open)}>
-        {activeProfile?.label || 'Select profile'}
-        <span style={{ fontSize: '0.6rem', marginLeft: '4px' }}>{open ? '▲' : '▼'}</span>
+        <span className="switcher-label">{activeProfile?.label || 'Select profile'}</span>
+        <span className="switcher-arrow">{open ? '▲' : '▼'}</span>
       </button>
       {open && (
         <div className="profile-switcher__dropdown">
@@ -49,13 +49,13 @@ function MemberSwitcher() {
   const [open, setOpen] = useState(false)
 
   const members = activeProfile?.family_members || []
-  if (members.length === 0) return null
+  // if (members.length === 0) return null // Removed to ensure discoverability
 
   return (
     <div className="profile-switcher" style={{ marginRight: '8px' }}>
       <button className="member-switcher" onClick={() => setOpen(!open)}>
-        👤 {activeMember || 'Member'}
-        <span style={{ fontSize: '0.6rem', marginLeft: '4px' }}>{open ? '▲' : '▼'}</span>
+        <span className="switcher-label">{activeMember || 'Member'}</span>
+        <span className="switcher-arrow">{open ? '▲' : '▼'}</span>
       </button>
       {open && (
         <div className="profile-switcher__dropdown">

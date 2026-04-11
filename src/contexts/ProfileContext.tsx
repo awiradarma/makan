@@ -53,7 +53,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     localStorage.getItem('activeMember')
   )
   const [theme, setTheme] = useState<'light' | 'dark'>(
-    (localStorage.getItem('theme') as 'light' | 'dark') || 'dark'
+    (localStorage.getItem('theme') as 'light' | 'dark') || 'light'
   )
   const [loading, setLoading] = useState(true)
   const isCreatingProfile = useRef(false)
@@ -189,8 +189,18 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   return (
     <ProfileContext.Provider
       value={{ 
-        profiles, 
-        activeProfile, 
+        profiles: profiles.map(p => ({
+          ...p,
+          family_members: p.family_members && p.family_members.length > 0 
+            ? p.family_members 
+            : ['Papa', 'Mama', 'Kids']
+        })), 
+        activeProfile: activeProfile ? {
+          ...activeProfile,
+          family_members: activeProfile.family_members && activeProfile.family_members.length > 0
+            ? activeProfile.family_members
+            : ['Papa', 'Mama', 'Kids']
+        } : null, 
         activeProfileId,
         setActiveProfileId: handleSetActiveProfileId, 
         createProfile, 

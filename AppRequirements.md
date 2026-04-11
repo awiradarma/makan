@@ -25,6 +25,10 @@ default_currency: String (USD/IDR)
 
 timezone: String
 
+inbound_token: String
+
+family_members: Array (e.g., ["Papa", "Mama", "Kids"])
+
 restaurants (Collection)
 profile_id: Reference (To separate parent's Bogor spots from your San Antonio spots)
 
@@ -35,6 +39,16 @@ is_disliked: Boolean
 tags: Array (e.g., "Indonesian", "BBQ", "Healthy")
 
 last_ordered_at: Timestamp
+
+address: String
+
+lat: Number
+
+lng: Number
+
+faved_by: Array (Member names who liked this)
+
+disliked_by: Array (Member names who disliked this)
 
 orders (Collection)
 profile_id: Reference

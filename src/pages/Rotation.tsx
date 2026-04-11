@@ -165,7 +165,7 @@ export default function Rotation() {
                   )}
                 </div>
 
-                <div className="flex-row gap-xs" style={{ minWidth: '80px', alignItems: 'flex-center' }}>
+                <div className="flex-row gap-xs align-center" style={{ minWidth: '80px' }}>
                   <button
                     className={`btn-pref ${restaurant.faved_by?.includes(activeMember || '') ? 'btn-pref--active' : ''}`}
                     onClick={() => handleTogglePreference(restaurant.id, 'faved_by')}

@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
-import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, doc, updateDoc, deleteField } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useProfile } from '@/contexts/ProfileContext'
 import { toggleRestaurantPreference } from '@/lib/preferences'
@@ -50,7 +50,16 @@ export default function FoodLibrary() {
       
       // If we are updating the rating, also update the member-specific map
       if (updates.rating !== undefined && activeMember) {
-        firestoreUpdates[`member_ratings.${activeMember}`] = updates.rating
+        if (updates.rating === null) {
+          firestoreUpdates[`member_ratings.${activeMember}`] = deleteField()
+        } else {
+          firestoreUpdates[`member_ratings.${activeMember}`] = updates.rating
+        }
+        
+        // Remove the top-level rating from the update if we are doing a member rating
+        // so we don't accidentally overwrite the global weighted rating 
+        // (unless that's intended, but usually it's calculated or separate)
+        delete firestoreUpdates.rating
       }
 
       await updateDoc(doc(db, 'food_items', itemId), firestoreUpdates)
@@ -189,9 +198,10 @@ export default function FoodLibrary() {
 function ItemRow({ item, onUpdate, showRestaurant, activeMember }: { item: FoodItem, onUpdate: (id: string, u: any) => void, showRestaurant: boolean, activeMember: string | null }) {
   const [isEditing, setIsEditing] = useState(false)
   
-  // Use active member's rating if available, otherwise global rating
-  const displayedRating = (activeMember && item.member_ratings?.[activeMember]) || item.rating
-  const isPersonalRating = activeMember && item.member_ratings?.[activeMember] !== undefined
+  // Use active member's rating if available, otherwise global rating for the badge
+  const personalRating = activeMember ? item.member_ratings?.[activeMember] : undefined
+  const displayedRating = personalRating || item.rating
+  const isPersonalRating = personalRating !== undefined
 
   return (
     <div className="library-item">
@@ -233,8 +243,8 @@ function ItemRow({ item, onUpdate, showRestaurant, activeMember }: { item: FoodI
               {[1, 2, 3, 4, 5].map((r) => (
                 <button
                   key={r}
-                  className={`btn-rating ${displayedRating === r ? 'active' : ''}`}
-                  onClick={() => onUpdate(item.id, { rating: r })}
+                  className={`btn-rating ${personalRating === r ? 'active' : ''}`}
+                  onClick={() => onUpdate(item.id, { rating: personalRating === r ? null : r })}
                 >
                   {r === 1 && '🤢'}
                   {r === 2 && '😕'}

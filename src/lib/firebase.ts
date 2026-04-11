@@ -4,13 +4,22 @@ import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
 import { getFunctions } from 'firebase/functions'
 
+const env = (key: string) => {
+  try {
+    // @ts-ignore
+    return import.meta.env?.[key] || process.env?.[key]
+  } catch {
+    return process.env?.[key]
+  }
+}
+
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY?.trim(),
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN?.trim(),
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID?.trim(),
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET?.trim(),
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID?.trim(),
-  appId: import.meta.env.VITE_FIREBASE_APP_ID?.trim(),
+  apiKey: env('VITE_FIREBASE_API_KEY')?.trim(),
+  authDomain: env('VITE_FIREBASE_AUTH_DOMAIN')?.trim(),
+  projectId: env('VITE_FIREBASE_PROJECT_ID')?.trim(),
+  storageBucket: env('VITE_FIREBASE_STORAGE_BUCKET')?.trim(),
+  messagingSenderId: env('VITE_FIREBASE_MESSAGING_SENDER_ID')?.trim(),
+  appId: env('VITE_FIREBASE_APP_ID')?.trim(),
 }
 
 const app = initializeApp(firebaseConfig)

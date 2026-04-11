@@ -6,6 +6,7 @@ import { useLocation } from '@/contexts/LocationContext'
 import { toggleRestaurantPreference } from '@/lib/preferences'
 import { TagInput } from '@/components/TagInput'
 import { calculateDistance, formatDistance } from '@/lib/geocoding'
+import { toast } from 'react-hot-toast'
 import type { FoodItem, Restaurant } from '@/types'
 
 type ViewMode = 'restaurant' | 'item'
@@ -19,6 +20,11 @@ export default function FoodLibrary() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [foodItems, setFoodItems] = useState<FoodItem[]>([])
   const [loading, setLoading] = useState(true)
+  
+  // Merge state
+  const [mergeSource, setMergeSource] = useState<Restaurant | null>(null)
+  const [isMerging, setIsMerging] = useState(false)
+  const [confirmTargetId, setConfirmTargetId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!activeProfile) return
@@ -89,6 +95,35 @@ export default function FoodLibrary() {
     const restaurant = restaurants.find((r) => r.id === restaurantId)
     if (!restaurant || !activeMember) return
     await toggleRestaurantPreference(restaurant, activeMember, type)
+  }
+
+  const handleMerge = async (target: Restaurant) => {
+    console.log('handleMerge triggered for target:', target.name)
+    if (!mergeSource) return
+    if (!activeProfile) return
+    if (isMerging) return
+    
+    if (confirmTargetId !== target.id) {
+      setConfirmTargetId(target.id)
+      return
+    }
+
+    console.log('Merge confirmed. Executing...')
+    setIsMerging(true)
+    const loadingToast = toast.loading('Merging restaurants...')
+    try {
+      const { mergeRestaurants } = await import('@/lib/restaurants')
+      await mergeRestaurants(activeProfile.id, target.id, mergeSource.id)
+      console.log('Merge successful logic-wise')
+      toast.success('Restaurants merged successfully!', { id: loadingToast })
+      setMergeSource(null)
+      setConfirmTargetId(null)
+    } catch (err) {
+      console.error('Merge error:', err)
+      toast.error('Failed to merge restaurants', { id: loadingToast })
+    } finally {
+      setIsMerging(false)
+    }
   }
 
   const filteredData = useMemo(() => {
@@ -168,6 +203,19 @@ export default function FoodLibrary() {
         </div>
       </div>
 
+      {mergeSource && (
+        <div className="card" style={{ background: 'var(--color-accent-soft)', border: '1px dashed var(--color-accent)', padding: 'var(--spacing-md)' }}>
+          <div className="flex-row justify-between align-center">
+            <div style={{ fontSize: 'var(--font-size-sm)' }}>
+              Merging <strong>{mergeSource.name}</strong>. Select a target restaurant below.
+            </div>
+            <button className="btn btn--ghost" style={{ padding: '4px 8px', fontSize: '10px' }} onClick={() => { setMergeSource(null); setConfirmTargetId(null); }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="flex-row gap-sm align-center wrap" style={{ flexWrap: 'wrap' }}>
         <div className="search-bar" style={{ flex: 1, minWidth: '200px' }}>
           <span className="search-icon">🔍</span>
@@ -226,7 +274,30 @@ export default function FoodLibrary() {
                     </button>
                   </div>
                 </div>
-                <span className="tag tag--muted">{items.length} items</span>
+                
+                <div className="flex-row gap-sm align-center">
+                  <span className="tag tag--muted">{items.length} items</span>
+                  {mergeSource ? (
+                    restaurant.id !== mergeSource.id && (
+                      <button 
+                        className={`btn ${confirmTargetId === restaurant.id ? 'btn--accent' : 'btn--primary'}`} 
+                        style={{ padding: '4px 12px', fontSize: '12px' }}
+                        onClick={() => handleMerge(restaurant)}
+                        disabled={isMerging}
+                      >
+                        {confirmTargetId === restaurant.id ? 'Confirm?' : 'Merge Here'}
+                      </button>
+                    )
+                  ) : (
+                    <button 
+                      className="btn btn--ghost" 
+                      style={{ padding: '4px 8px', fontSize: '10px', textTransform: 'uppercase' }}
+                      onClick={() => setMergeSource(restaurant)}
+                    >
+                      Merge
+                    </button>
+                  )}
+                </div>
               </div>
               
               <div className="flex-col gap-sm">

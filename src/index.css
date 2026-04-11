@@ -1372,3 +1372,17 @@ input[type="date"].form-input {
     padding-bottom: 120px;
   }
 }
+
+.library-item__rating-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+}
+
+.library-item__rating-badge--personal {
+  background: var(--color-accent-soft);
+  box-shadow: 0 0 4px var(--color-accent-soft);
+}

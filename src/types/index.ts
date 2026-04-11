@@ -53,7 +53,8 @@ export interface FoodItem {
   restaurant_id: string
   restaurant_name: string
   name: string
-  rating?: number
+  rating?: number // Global/Latest rating
+  member_ratings?: Record<string, number> // Per-member ratings
   order_count: number
   last_ordered_at: Date
   tags: string[]

@@ -13,7 +13,7 @@ export function normalizeItemName(name: string): string {
  * Updates or creates FoodItem records for each item in an order.
  * This should be called when an order is confirmed or edited.
  */
-export async function updateFoodItems(order: Order) {
+export async function updateFoodItems(order: Order, activeMember?: string | null) {
   if (order.status !== 'confirmed') return
   if (!order.restaurant_name?.trim()) return
 
@@ -40,6 +40,12 @@ export async function updateFoodItems(order: Order) {
         name: item.name.trim(),
         // We use the most recent rating if provided
         ...(item.rating !== undefined ? { rating: item.rating } : {}),
+        // Add member-specific rating if we know who it is
+        ...(item.rating !== undefined && activeMember ? {
+          member_ratings: {
+            [activeMember]: item.rating
+          }
+        } : {}),
         order_count: increment(1),
         last_ordered_at: Timestamp.fromDate(orderedDate),
         updated_at: serverTimestamp(),

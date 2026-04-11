@@ -12,13 +12,22 @@ export async function toggleRestaurantPreference(
   const currentArray = restaurant[type] || []
   const isPresent = currentArray.includes(member)
 
+  const otherType = type === 'faved_by' ? 'disliked_by' : 'faved_by'
+  const otherArray = restaurant[otherType] || []
+
   const nextArray = isPresent
     ? currentArray.filter((m) => m !== member)
     : [...currentArray, member]
+  
+  // Mutual exclusion: if we are adding to one, remove from the other
+  const nextOtherArray = !isPresent 
+    ? otherArray.filter((m) => m !== member)
+    : otherArray
 
   try {
     await updateDoc(doc(db, 'restaurants', restaurant.id), {
       [type]: nextArray,
+      [otherType]: nextOtherArray,
     })
   } catch (err) {
     console.error(`Error toggling ${type}:`, err)

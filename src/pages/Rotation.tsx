@@ -63,7 +63,10 @@ export default function Rotation() {
 
   const filtered = restaurants.filter(r => {
     // Basic visibility filter
-    if (!showDisliked && r.is_disliked) return false
+    if (!showDisliked) {
+      if (r.is_disliked) return false
+      if (r.disliked_by?.includes(activeMember || '')) return false
+    }
     
     // Search filter
     const query = searchQuery.toLowerCase().trim()

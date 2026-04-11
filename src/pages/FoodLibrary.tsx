@@ -8,7 +8,7 @@ import type { FoodItem, Restaurant } from '@/types'
 type ViewMode = 'restaurant' | 'item'
 
 export default function FoodLibrary() {
-  const { activeProfile } = useProfile()
+  const { activeProfile, activeMember } = useProfile()
   const [viewMode, setViewMode] = useState<ViewMode>('restaurant')
   const [searchQuery, setSearchQuery] = useState('')
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
@@ -43,12 +43,16 @@ export default function FoodLibrary() {
     }
   }, [activeProfile])
 
-  const handleUpdateItem = async (itemId: string, updates: Partial<FoodItem>) => {
+  const handleUpdateItem = async (itemId: string, updates: any) => {
     try {
-      await updateDoc(doc(db, 'food_items', itemId), {
-        ...updates,
-        updated_at: new Date()
-      })
+      const firestoreUpdates = { ...updates, updated_at: new Date() }
+      
+      // If we are updating the rating, also update the member-specific map
+      if (updates.rating !== undefined && activeMember) {
+        firestoreUpdates[`member_ratings.${activeMember}`] = updates.rating
+      }
+
+      await updateDoc(doc(db, 'food_items', itemId), firestoreUpdates)
     } catch (err) {
       console.error('Error updating food item:', err)
     }
@@ -136,7 +140,7 @@ export default function FoodLibrary() {
               <div className="flex-col gap-sm">
                 {items.length > 0 ? (
                   items.map((item: FoodItem) => (
-                    <ItemRow key={item.id} item={item} onUpdate={handleUpdateItem} showRestaurant={false} />
+                    <ItemRow key={item.id} item={item} onUpdate={handleUpdateItem} showRestaurant={false} activeMember={activeMember} />
                   ))
                 ) : (
                   <div className="empty-text">No items found for this restaurant</div>
@@ -147,7 +151,7 @@ export default function FoodLibrary() {
         ) : (
           <div className="card flex-col gap-sm">
             {(filteredData as FoodItem[]).map(item => (
-              <ItemRow key={item.id} item={item} onUpdate={handleUpdateItem} showRestaurant={true} />
+              <ItemRow key={item.id} item={item} onUpdate={handleUpdateItem} showRestaurant={true} activeMember={activeMember} />
             ))}
             {filteredData.length === 0 && <div className="empty-state">No items found</div>}
           </div>
@@ -157,8 +161,12 @@ export default function FoodLibrary() {
   )
 }
 
-function ItemRow({ item, onUpdate, showRestaurant }: { item: FoodItem, onUpdate: (id: string, u: any) => void, showRestaurant: boolean }) {
+function ItemRow({ item, onUpdate, showRestaurant, activeMember }: { item: FoodItem, onUpdate: (id: string, u: any) => void, showRestaurant: boolean, activeMember: string | null }) {
   const [isEditing, setIsEditing] = useState(false)
+  
+  // Use active member's rating if available, otherwise global rating
+  const displayedRating = (activeMember && item.member_ratings?.[activeMember]) || item.rating
+  const isPersonalRating = activeMember && item.member_ratings?.[activeMember] !== undefined
 
   return (
     <div className="library-item">
@@ -166,12 +174,13 @@ function ItemRow({ item, onUpdate, showRestaurant }: { item: FoodItem, onUpdate:
         <div className="flex-col gap-xs" style={{ flex: 1 }}>
           <div className="flex-row align-center gap-sm">
             <span className="library-item__name">{item.name}</span>
-            <span className="library-item__rating-badge">
-              {item.rating === 1 && '🤢'}
-              {item.rating === 2 && '😕'}
-              {item.rating === 3 && '😐'}
-              {item.rating === 4 && '😋'}
-              {item.rating === 5 && '🤩'}
+            <span className={`library-item__rating-badge ${isPersonalRating ? 'library-item__rating-badge--personal' : ''}`} title={isPersonalRating ? 'Your personal rating' : 'Global rating'}>
+              {displayedRating === 1 && '🤢'}
+              {displayedRating === 2 && '😕'}
+              {displayedRating === 3 && '😐'}
+              {displayedRating === 4 && '😋'}
+              {displayedRating === 5 && '🤩'}
+              {isPersonalRating && <span style={{ fontSize: '8px', marginLeft: '2px', verticalAlign: 'middle' }}>👤</span>}
             </span>
           </div>
           {showRestaurant && (
@@ -192,12 +201,14 @@ function ItemRow({ item, onUpdate, showRestaurant }: { item: FoodItem, onUpdate:
       {isEditing && (
         <div className="mt-md flex-col gap-md library-item__edit-panel">
           <div className="flex-col gap-xs">
-            <label className="form-label">Rating</label>
+            <label className="form-label">
+              Rating {activeMember ? `as ${activeMember}` : ''}
+            </label>
             <div className="flex-row gap-sm">
               {[1, 2, 3, 4, 5].map((r) => (
                 <button
                   key={r}
-                  className={`btn-rating ${item.rating === r ? 'active' : ''}`}
+                  className={`btn-rating ${displayedRating === r ? 'active' : ''}`}
                   onClick={() => onUpdate(item.id, { rating: r })}
                 >
                   {r === 1 && '🤢'}

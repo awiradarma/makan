@@ -4,6 +4,7 @@ import { doc, getDoc, updateDoc, setDoc, serverTimestamp, Timestamp } from 'fire
 import { toast } from 'react-hot-toast'
 import { db } from '@/lib/firebase'
 import { updateFoodItems } from '@/lib/foodItems'
+import { useProfile } from '@/contexts/ProfileContext'
 import { TagInput } from '@/components/TagInput'
 import { geocodeAddress } from '@/lib/geocoding'
 import type { Order, OrderItem } from '@/types'
@@ -18,6 +19,7 @@ function formatCurrency(amount: number, currency: string) {
 export default function OrderDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { activeMember } = useProfile()
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -137,7 +139,7 @@ export default function OrderDetail() {
       }
       
       if (confirmReview) {
-        await updateFoodItems(fullUpdatedOrder)
+        await updateFoodItems(fullUpdatedOrder, activeMember)
         toast.success('Order reviewed and confirmed!')
       } else {
         toast.success('Order updated')

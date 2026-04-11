@@ -14,6 +14,8 @@ import {
   onSnapshot,
   addDoc,
   serverTimestamp,
+  updateDoc,
+  doc,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useAuth } from './AuthContext'
@@ -29,6 +31,7 @@ interface ProfileContextValue {
   setActiveMember: (name: string | null) => void
   theme: 'light' | 'dark'
   toggleTheme: () => void
+  updateProfile: (id: string, updates: Partial<Profile>) => Promise<void>
   loading: boolean
 }
 
@@ -167,6 +170,22 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     [user, handleSetActiveProfileId]
   )
 
+  const updateProfile = useCallback(async (id: string, updates: Partial<Profile>) => {
+    try {
+      // Remove restricted fields from updates
+      const cleanUpdates = { ...updates }
+      delete (cleanUpdates as any).id
+      delete (cleanUpdates as any).created_at
+      delete (cleanUpdates as any).owner_uid
+      delete (cleanUpdates as any).inbound_token
+
+      await updateDoc(doc(db, 'profiles', id), cleanUpdates)
+    } catch (err) {
+      console.error('Error updating profile:', err)
+      throw err
+    }
+  }, [])
+
   return (
     <ProfileContext.Provider
       value={{ 
@@ -179,6 +198,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         setActiveMember,
         theme,
         toggleTheme,
+        updateProfile,
         loading 
       }}
     >

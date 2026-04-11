@@ -8,7 +8,7 @@ import pkg from '../../package.json'
 
 export default function Settings() {
   const { user, signOut } = useAuth()
-  const { profiles, activeProfile, createProfile, setActiveProfileId } = useProfile()
+  const { profiles, activeProfile, createProfile, setActiveProfileId, updateProfile } = useProfile()
   const [showCreate, setShowCreate] = useState(false)
   const [newLabel, setNewLabel] = useState('')
   const [newCurrency, setNewCurrency] = useState<'USD' | 'IDR'>('USD')
@@ -140,6 +140,56 @@ export default function Settings() {
                   <span className="tag">Active</span>
                 )}
               </div>
+              
+              {profile.id === activeProfile?.id && (
+                <div className="flex-col gap-sm" style={{ marginTop: 'var(--spacing-md)', paddingTop: 'var(--spacing-md)', borderTop: '1px solid var(--color-border)' }}>
+                  <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600 }}>Family Members</div>
+                  <div className="flex-col gap-xs">
+                    {(profile.family_members || ['Papa', 'Mama', 'Kids']).map((member) => (
+                      <div key={member} style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center',
+                        background: 'var(--color-bg-primary)',
+                        padding: 'var(--spacing-xs) var(--spacing-sm)',
+                        borderRadius: 'var(--radius-sm)'
+                      }}>
+                        <span>{member}</span>
+                        <button 
+                          className="btn btn--ghost" 
+                          style={{ padding: '2px 8px', color: 'var(--color-danger)' }}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            const next = (profile.family_members || []).filter(m => m !== member)
+                            updateProfile(profile.id, { family_members: next })
+                          }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', gap: 'var(--spacing-ms)' }}>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      style={{ padding: 'var(--spacing-xs) var(--spacing-sm)', fontSize: 'var(--font-size-sm)' }}
+                      placeholder="Add member..."
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          const name = (e.target as HTMLInputElement).value.trim()
+                          if (name && !(profile.family_members || []).includes(name)) {
+                            const next = [...(profile.family_members || []), name]
+                            updateProfile(profile.id, { family_members: next })
+                            ;(e.target as HTMLInputElement).value = ''
+                          }
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
               <div
                 style={{
                   marginTop: 'var(--spacing-sm)',

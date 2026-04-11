@@ -68,6 +68,7 @@
 
   /* Layout Constants */
   --top-bar-height: 56px;
+  --section-header-height: 48px;
 }
 
 [data-theme='light'] {
@@ -984,6 +985,20 @@ a:hover {
   color: var(--color-text-primary);
 }
 
+.section-header--sticky {
+  position: sticky;
+  top: var(--top-bar-height);
+  z-index: 95;
+  background: var(--color-bg-primary);
+  margin-top: calc(var(--spacing-lg) * -1);
+  padding: var(--spacing-lg) 0 var(--spacing-sm);
+  height: var(--section-header-height);
+}
+
+[data-theme='light'] .section-header--sticky {
+  background: var(--color-bg-primary);
+}
+
 /* =============================================
    Utilities
    ============================================= */
@@ -1064,6 +1079,12 @@ a:hover {
   background: var(--color-bg-primary);
   padding: var(--spacing-md) 0;
   margin-top: calc(var(--spacing-lg) * -1);
+  transition: top var(--transition-base);
+}
+
+.section-header--sticky + .search-bar {
+  top: calc(var(--top-bar-height) + var(--section-header-height));
+  margin-top: 0;
 }
 
 [data-theme='light'] .search-bar {

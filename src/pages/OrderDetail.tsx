@@ -118,7 +118,18 @@ export default function OrderDetail() {
       }
 
       if (restSnap.exists()) {
-        await updateDoc(restRef, restData)
+        const currentData = restSnap.data()
+        const currentLastOrderedAt = currentData.last_ordered_at?.toDate() || new Date(0)
+        
+        // Only update last_ordered_at if the order being saved is newer
+        const updates: any = { ...restData }
+        const newOrderDate = new Date(orderedAt)
+        
+        if (newOrderDate > currentLastOrderedAt) {
+          updates.last_ordered_at = Timestamp.fromDate(newOrderDate)
+        }
+        
+        await updateDoc(restRef, updates)
       } else {
         await setDoc(restRef, {
           ...restData,

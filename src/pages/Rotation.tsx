@@ -87,19 +87,7 @@ export default function Rotation() {
 
   return (
     <div className="page-container flex-col gap-xl">
-      {/* Search Bar */}
-      <div className="search-bar">
-        <span className="search-icon">🔍</span>
-        <input
-          type="text"
-          className="search-input"
-          placeholder="Filter restaurants by name or tag..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-      </div>
-
-      <div className="section-header">
+      <div className="section-header section-header--sticky">
         <h2 className="section-title">
           {searchQuery ? 'Search Results' : 'Rotation'}
         </h2>
@@ -119,6 +107,17 @@ export default function Rotation() {
             {showDisliked ? 'Hide disliked' : 'Show disliked'}
           </button>
         </div>
+      </div>
+
+      <div className="search-bar">
+        <span className="search-icon">🔍</span>
+        <input
+          type="text"
+          className="search-input"
+          placeholder="Filter restaurants by name or tag..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
       </div>
 
       {filtered.length === 0 ? (

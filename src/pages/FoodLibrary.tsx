@@ -58,6 +58,38 @@ export default function FoodLibrary() {
     }
   }
 
+  const handlePreference = async (restaurantId: string, type: 'faved_by' | 'disliked_by', memberName: string) => {
+    try {
+      const rest = restaurants.find(r => r.id === restaurantId)
+      if (!rest) return
+
+      const currentList = rest[type] || []
+      const isRemoving = currentList.includes(memberName)
+      
+      let nextList: string[]
+      if (isRemoving) {
+        nextList = currentList.filter(m => m !== memberName)
+      } else {
+        nextList = [...currentList, memberName]
+      }
+
+      const updates: any = { [type]: nextList }
+
+      // Mutual exclusion: If liking, remove from dislikes. If disliking, remove from likes.
+      if (!isRemoving) {
+        const otherType = type === 'faved_by' ? 'disliked_by' : 'faved_by'
+        const otherList = rest[otherType] || []
+        if (otherList.includes(memberName)) {
+          updates[otherType] = otherList.filter(m => m !== memberName)
+        }
+      }
+
+      await updateDoc(doc(db, 'restaurants', restaurantId), updates)
+    } catch (err) {
+      console.error('Error updating preference:', err)
+    }
+  }
+
   const filteredData = useMemo(() => {
     const q = searchQuery.toLowerCase().trim()
     
@@ -100,7 +132,7 @@ export default function FoodLibrary() {
 
   return (
     <div className="page-container flex-col gap-lg">
-      <div className="section-header">
+      <div className="section-header section-header--sticky">
         <h2 className="section-title">Food Library</h2>
         <div className="segmented-control">
           <button 
@@ -133,7 +165,27 @@ export default function FoodLibrary() {
           (filteredData as any[]).map(({ restaurant, items }) => (
             <div key={restaurant.id} className="card flex-col gap-md">
               <div className="flex-row justify-between align-center">
-                <h3 className="card__title" style={{ fontSize: 'var(--font-size-lg)' }}>{restaurant.name}</h3>
+                <div className="flex-col gap-xs">
+                  <h3 className="card__title" style={{ fontSize: 'var(--font-size-lg)', margin: 0 }}>{restaurant.name}</h3>
+                  <div className="flex-row align-center gap-xs">
+                    <button 
+                      className={`btn-icon ${restaurant.faved_by?.includes(activeMember || '') ? 'active' : ''}`}
+                      onClick={() => activeMember && handlePreference(restaurant.id, 'faved_by', activeMember)}
+                      style={{ padding: '2px 4px', fontSize: '1rem', background: 'none', border: 'none', cursor: 'pointer', opacity: restaurant.faved_by?.includes(activeMember || '') ? 1 : 0.4 }}
+                      title={restaurant.faved_by?.includes(activeMember || '') ? 'Unlike' : 'Like'}
+                    >
+                      {restaurant.faved_by?.includes(activeMember || '') ? '❤️' : '🤍'}
+                    </button>
+                    <button 
+                      className={`btn-icon ${restaurant.disliked_by?.includes(activeMember || '') ? 'active' : ''}`}
+                      onClick={() => activeMember && handlePreference(restaurant.id, 'disliked_by', activeMember)}
+                      style={{ padding: '2px 4px', fontSize: '1rem', background: 'none', border: 'none', cursor: 'pointer', opacity: restaurant.disliked_by?.includes(activeMember || '') ? 1 : 0.4 }}
+                      title={restaurant.disliked_by?.includes(activeMember || '') ? 'Remove dislike' : 'Dislike'}
+                    >
+                      {restaurant.disliked_by?.includes(activeMember || '') ? '💔' : '🖤'}
+                    </button>
+                  </div>
+                </div>
                 <span className="tag tag--muted">{items.length} items</span>
               </div>
               

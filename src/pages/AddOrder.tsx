@@ -179,10 +179,19 @@ export default function AddOrder() {
 
       if (restSnap.exists()) {
         const currentData = restSnap.data()
-        await updateDoc(restRef, {
+        const currentLastOrderedAt = currentData.last_ordered_at?.toDate() || new Date(0)
+        
+        const updates: any = {
           ...restData,
           order_count: (currentData.order_count || 0) + 1,
-        })
+        }
+
+        // Only update last_ordered_at if the new order is more recent
+        if (orderedDate < currentLastOrderedAt) {
+          delete updates.last_ordered_at
+        }
+
+        await updateDoc(restRef, updates)
       } else {
         await setDoc(restRef, {
           ...restData,

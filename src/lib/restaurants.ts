@@ -6,11 +6,19 @@ import {
   writeBatch, 
   doc, 
   getDoc,
-  serverTimestamp
+  serverTimestamp,
+  deleteField
 } from 'firebase/firestore'
 import { db } from './firebase'
 import { normalizeItemName } from './foodItems'
 import type { Restaurant, FoodItem } from '@/types'
+
+const getMillis = (date: any) => {
+  if (!date) return 0
+  if (typeof date.toMillis === 'function') return date.toMillis()
+  if (date instanceof Date) return date.getTime()
+  return 0
+}
 
 /**
  * Merges a source restaurant into a target restaurant.
@@ -79,8 +87,6 @@ export async function mergeRestaurants(
       const mergedMemberRatings = { ...(targetItem.member_ratings || {}) }
       if (sourceItem.member_ratings) {
         Object.entries(sourceItem.member_ratings).forEach(([member, rating]) => {
-          // If both have ratings, we'll keep the target's rating or we could average?
-          // Usually, "merge" implies adding missing ones. Let's overwrite only if missing.
           if (mergedMemberRatings[member] === undefined) {
             mergedMemberRatings[member] = rating
           }
@@ -89,14 +95,14 @@ export async function mergeRestaurants(
       
       // Recalculate average rating
       const ratings = Object.values(mergedMemberRatings) as number[]
-      let newGlobalRating = targetItem.rating
+      let newGlobalRating: any = deleteField()
       if (ratings.length > 0) {
-        newGlobalRating = Math.round(ratings.reduce((a, b) => a + b, 0) / ratings.length)
+        newGlobalRating = Math.round(ratings.reduce((a, b: any) => a + b, 0) / ratings.length)
       }
 
       batch.update(targetItemRef, {
         order_count: (targetItem.order_count || 0) + (sourceItem.order_count || 0),
-        last_ordered_at: sourceItem.last_ordered_at > targetItem.last_ordered_at 
+        last_ordered_at: getMillis(sourceItem.last_ordered_at) > getMillis(targetItem.last_ordered_at)
           ? sourceItem.last_ordered_at 
           : targetItem.last_ordered_at,
         member_ratings: mergedMemberRatings,
@@ -109,12 +115,17 @@ export async function mergeRestaurants(
       batch.delete(sourceItemDoc.ref)
     } else {
       // Create new food item for target (since it didn't exist)
-      batch.set(targetItemRef, {
+      // Ensure no undefined values in the object
+      const newItem: any = {
         ...sourceItem,
         restaurant_id: targetId,
         restaurant_name: targetData.name,
         updated_at: serverTimestamp()
-      })
+      }
+      // Remove any undefined fields that might have come from sourceItem
+      Object.keys(newItem).forEach(key => newItem[key] === undefined && delete newItem[key])
+
+      batch.set(targetItemRef, newItem)
       // Delete source item
       batch.delete(sourceItemDoc.ref)
     }
@@ -127,7 +138,7 @@ export async function mergeRestaurants(
   
   batch.update(targetRef, {
     order_count: (targetData.order_count || 0) + (sourceData.order_count || 0),
-    last_ordered_at: sourceData.last_ordered_at > targetData.last_ordered_at
+    last_ordered_at: getMillis(sourceData.last_ordered_at) > getMillis(targetData.last_ordered_at)
       ? sourceData.last_ordered_at
       : targetData.last_ordered_at,
     faved_by: mergedFaved,

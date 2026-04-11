@@ -294,6 +294,24 @@ export default function Settings() {
         >
           🔄 Sync Restaurant History
         </button>
+        <button 
+          className="btn btn--secondary" 
+          disabled={!activeProfile}
+          onClick={async () => {
+            if (!activeProfile) return
+            const loadingToast = toast.loading('Geocoding missing restaurant locations...')
+            try {
+              const { geocodeExistingRestaurants } = await import('@/lib/migration')
+              const result = await geocodeExistingRestaurants(activeProfile.id)
+              toast.success(`Successfully geocoded ${result.successCount} of ${result.attemptCount} missing locations!`, { id: loadingToast })
+            } catch (err) {
+              console.error('Geocode error:', err)
+              toast.error('Failed to geocode locations', { id: loadingToast })
+            }
+          }}
+        >
+          📍 Geocode Missing Locations
+        </button>
       </div>
 
       <div style={{ textAlign: 'center', opacity: 0.3, fontSize: 'var(--font-size-xs)', padding: 'var(--spacing-md)' }}>

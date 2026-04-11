@@ -32,17 +32,28 @@ export async function geocodeAddress(address: string): Promise<{ lat: number; ln
   const originalAddress = address.trim();
   const cleanedAddress = cleanAddress(originalAddress);
   
-  const attemptGeocode = async (query: string) => {
+  // Extract postal code if present (Indonesian postal codes are 5 digits)
+  const postalMatch = originalAddress.match(/\b\d{5}\b/);
+  const postalCode = postalMatch ? postalMatch[0] : null;
+
+  const attemptGeocode = async (query: string, params: Record<string, string> = {}) => {
     try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
-        {
-          headers: {
-            'Accept': 'application/json',
-            'User-Agent': 'MakanFamilyApp/1.0',
-          },
-        }
-      )
+      const url = new URL('https://nominatim.openstreetmap.org/search')
+      url.searchParams.set('format', 'json')
+      url.searchParams.set('q', query)
+      url.searchParams.set('limit', '1')
+      
+      // Add extra params if provided
+      Object.entries(params).forEach(([k, v]) => {
+        url.searchParams.set(k, v)
+      })
+
+      const response = await fetch(url.toString(), {
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'MakanFamilyApp/1.0',
+        },
+      })
       
       if (!response.ok) {
         console.warn(`Geocoding request failed for "${query}": ${response.statusText}`);
@@ -62,22 +73,29 @@ export async function geocodeAddress(address: string): Promise<{ lat: number; ln
     return null;
   }
 
-  // Attempt 1: Original address
-  let result = await attemptGeocode(originalAddress);
+  // Attempt 1: Original address with country constraint
+  let result = await attemptGeocode(originalAddress, { countrycodes: 'id' });
   if (result) return result;
 
-  // Attempt 2: Cleaned address (if different)
-  if (cleanedAddress && cleanedAddress !== originalAddress) {
-    result = await attemptGeocode(cleanedAddress);
+  // Attempt 2: Cleaned address with "Indonesia" appended
+  let queryWithCountry = cleanedAddress;
+  if (!cleanedAddress.toLowerCase().includes('indonesia')) {
+    queryWithCountry = `${cleanedAddress}, Indonesia`;
+  }
+  result = await attemptGeocode(queryWithCountry);
+  if (result) return result;
+
+  // Attempt 3: If we have a postal code, try a structured search
+  if (postalCode) {
+    result = await attemptGeocode(cleanedAddress, { postalcode: postalCode, countrycodes: 'id' });
     if (result) return result;
   }
 
-  // Attempt 3: Street and City/State only (fallback for very specific addresses)
+  // Attempt 4: Fallback - Street and City only
   const segments = originalAddress.split(',').map(s => s.trim());
   if (segments.length > 2) {
-    // Try taking the first segment (usually street) and the last two (city/state/zip)
-    const fallbackQuery = [segments[0], segments[segments.length - 1]].join(', ');
-    result = await attemptGeocode(fallbackQuery);
+    const fallbackQuery = `${segments[0]}, ${segments[segments.length - 1]}, Indonesia`;
+    result = await attemptGeocode(fallbackQuery, { countrycodes: 'id' });
     if (result) return result;
   }
 

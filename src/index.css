@@ -927,9 +927,8 @@ a:hover {
 .rotation-card__name {
   font-weight: 600;
   color: var(--color-text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .rotation-card__days {

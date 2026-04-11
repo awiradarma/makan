@@ -98,9 +98,15 @@ export async function geocodeExistingRestaurants(profileId: string) {
   const querySnapshot = await getDocs(q)
   
   let successCount = 0
+  let attemptCount = 0
+  
   for (const restaurantDoc of querySnapshot.docs) {
     const data = restaurantDoc.data()
+    // Even if it has lat/lng, we might want to "refresh" if it looks suspicious 
+    // but the user said "missing locations", so let's stick to that for now 
+    // or provide an "overwrite" flag. Let's do missing for safety.
     if (data.address && (!data.lat || !data.lng)) {
+      attemptCount++
       const coords = await geocodeAddress(data.address)
       if (coords) {
         await updateDoc(doc(db, 'restaurants', restaurantDoc.id), {
@@ -114,7 +120,7 @@ export async function geocodeExistingRestaurants(profileId: string) {
     }
   }
   
-  return successCount
+  return { successCount, attemptCount }
 }
 
 export async function syncRestaurantDates(profileId: string) {

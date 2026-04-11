@@ -38,6 +38,7 @@ export default function Dashboard() {
   const [restaurants, setRestaurants] = useState<Record<string, Restaurant>>({})
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [showOnlyPending, setShowOnlyPending] = useState(false)
   const [collapsedCards, setCollapsedCards] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
@@ -122,6 +123,10 @@ export default function Dashboard() {
   }
 
   const filteredOrders = orders.filter(order => {
+    // 1. Pending filter
+    if (showOnlyPending && order.status !== 'pending_review') return false
+
+    // 2. Search query filter
     const query = searchQuery.toLowerCase().trim()
     if (!query) return true
     
@@ -165,6 +170,23 @@ export default function Dashboard() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
+        <button 
+          className={`btn btn--icon ${showOnlyPending ? 'active' : ''}`}
+          onClick={() => setShowOnlyPending(!showOnlyPending)}
+          title="Show only orders needing review"
+          style={{ 
+            padding: '4px 8px', 
+            background: showOnlyPending ? 'var(--color-accent-soft)' : 'transparent',
+            border: showOnlyPending ? '1px solid var(--color-accent)' : '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-sm)',
+            fontSize: '12px',
+            marginLeft: '8px',
+            whiteSpace: 'nowrap',
+            color: showOnlyPending ? 'var(--color-accent)' : 'var(--color-text-secondary)'
+          }}
+        >
+          🟡 {showOnlyPending ? 'All Orders' : 'Needs Review'}
+        </button>
       </div>
 
       {/* Stats */}
@@ -177,6 +199,18 @@ export default function Dashboard() {
           <div className="stat-pill__value">{thisMonth.length}</div>
           <div className="stat-pill__label">This month</div>
         </div>
+        {orders.some(o => o.status === 'pending_review') && (
+          <div 
+            className={`stat-pill ${showOnlyPending ? 'stat-pill--active' : ''}`}
+            onClick={() => setShowOnlyPending(!showOnlyPending)}
+            style={{ cursor: 'pointer', border: showOnlyPending ? '1px solid #eab308' : 'none', background: showOnlyPending ? 'rgba(234,179,8,0.1)' : 'var(--color-bg-elevated)' }}
+          >
+            <div className="stat-pill__value" style={{ color: '#eab308' }}>
+              {orders.filter(o => o.status === 'pending_review').length}
+            </div>
+            <div className="stat-pill__label">Review</div>
+          </div>
+        )}
         <div className="stat-pill">
           <div className="stat-pill__value">
             {formatCurrency(monthSpend, activeProfile?.default_currency || 'USD')}

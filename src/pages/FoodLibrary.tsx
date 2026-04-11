@@ -50,20 +50,33 @@ export default function FoodLibrary() {
 
   const handleUpdateItem = async (itemId: string, updates: any) => {
     try {
-      const firestoreUpdates = { ...updates, updated_at: new Date() }
+      const item = foodItems.find(i => i.id === itemId)
+      if (!item) return
+
+      const firestoreUpdates: any = { ...updates, updated_at: new Date() }
       
       // If we are updating the rating, also update the member-specific map
+      // AND recalculate the global rating aggregate
       if (updates.rating !== undefined && activeMember) {
+        const newMemberRatings = { ...(item.member_ratings || {}) }
+        
         if (updates.rating === null) {
           firestoreUpdates[`member_ratings.${activeMember}`] = deleteField()
+          delete newMemberRatings[activeMember]
         } else {
           firestoreUpdates[`member_ratings.${activeMember}`] = updates.rating
+          newMemberRatings[activeMember] = updates.rating
         }
         
-        // Remove the top-level rating from the update if we are doing a member rating
-        // so we don't accidentally overwrite the global weighted rating 
-        // (unless that's intended, but usually it's calculated or separate)
-        delete firestoreUpdates.rating
+        // Recalculate global rating (average of all members)
+        const ratings = Object.values(newMemberRatings) as number[]
+        if (ratings.length > 0) {
+          const sum = ratings.reduce((a, b) => a + b, 0)
+          firestoreUpdates.rating = Math.round(sum / ratings.length)
+        } else {
+          // No ratings left, clear the global one
+          firestoreUpdates.rating = deleteField()
+        }
       }
 
       await updateDoc(doc(db, 'food_items', itemId), firestoreUpdates)

@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app'
 import { getAuth, GoogleAuthProvider } from 'firebase/auth'
-import { getFirestore } from 'firebase/firestore'
+import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
 import { getFunctions } from 'firebase/functions'
 
@@ -20,3 +20,14 @@ export const googleProvider = new GoogleAuthProvider()
 export const db = getFirestore(app)
 export const storage = getStorage(app)
 export const functions = getFunctions(app)
+
+// Enable offline persistence
+if (typeof window !== 'undefined') {
+  enableIndexedDbPersistence(db).catch((err) => {
+    if (err.code === 'failed-precondition') {
+      console.warn('Firestore persistence failed: Multiple tabs open')
+    } else if (err.code === 'unimplemented') {
+      console.warn('Firestore persistence failed: Browser not supported')
+    }
+  })
+}

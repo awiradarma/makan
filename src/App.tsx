@@ -9,6 +9,7 @@ import Rotation from '@/pages/Rotation'
 import AddOrder from '@/pages/AddOrder'
 import Settings from '@/pages/Settings'
 import OrderDetail from '@/pages/OrderDetail'
+import FoodLibrary from '@/pages/FoodLibrary'
 
 function ProfileSwitcher() {
   const { profiles, activeProfile, setActiveProfileId } = useProfile()
@@ -122,6 +123,7 @@ function AppShell() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/rotation" element={<Rotation />} />
+          <Route path="/library" element={<FoodLibrary />} />
           <Route path="/add" element={<AddOrder />} />
           <Route path="/order/:id" element={<OrderDetail />} />
           <Route path="/settings" element={<Settings />} />
@@ -153,6 +155,15 @@ function AppShell() {
           >
             <span className="bottom-nav__icon">🔄</span>
             <span>Rotation</span>
+          </NavLink>
+          <NavLink
+            to="/library"
+            className={({ isActive }) =>
+              `bottom-nav__item ${isActive ? 'bottom-nav__item--active' : ''}`
+            }
+          >
+            <span className="bottom-nav__icon">📚</span>
+            <span>Library</span>
           </NavLink>
           <NavLink
             to="/settings"

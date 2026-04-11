@@ -1198,6 +1198,96 @@ input[type="date"].form-input {
   max-width: 100%;
 }
 
+/* =============================================
+   Phase 3: Knowledge Base (Library)
+   ============================================= */
+
+.segmented-control {
+  display: flex;
+  background: var(--color-bg-elevated);
+  padding: 2px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.segmented-control__item {
+  padding: 4px 12px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  border-radius: calc(var(--radius-md) - 2px);
+  transition: all var(--transition-fast);
+}
+
+.segmented-control__item.active {
+  background: var(--color-bg-card);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.library-item {
+  padding: var(--spacing-md) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.library-item:last-child {
+  border-bottom: none;
+}
+
+.library-item__name {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+}
+
+.library-item__restaurant {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.library-item__rating-badge {
+  font-size: 1rem;
+}
+
+.library-item__edit-panel {
+  background: var(--color-bg-primary);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.btn-rating {
+  padding: 6px 12px;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: 1.1rem;
+}
+
+.btn-rating:hover {
+  background: var(--color-bg-hover);
+}
+
+.btn-rating.active {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+}
+
+.empty-text {
+  text-align: center;
+  padding: var(--spacing-lg);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+  font-style: italic;
+}
+
 @media (min-width: 640px) {
   .page-container {
     padding: var(--spacing-2xl);

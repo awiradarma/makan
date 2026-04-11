@@ -9,7 +9,9 @@ import {
 import { useNavigate } from 'react-router-dom'
 import { db } from '@/lib/firebase'
 import { useProfile } from '@/contexts/ProfileContext'
+import { useLocation } from '@/contexts/LocationContext'
 import { toggleRestaurantPreference, toggleGlobalDislike } from '@/lib/preferences'
+import { calculateDistance } from '@/lib/geocoding'
 import type { Restaurant } from '@/types'
 
 function daysSince(date: Date): number {
@@ -19,10 +21,12 @@ function daysSince(date: Date): number {
 
 export default function Rotation() {
   const { activeProfile, activeMember } = useProfile()
+  const { location } = useLocation()
   const navigate = useNavigate()
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [showDisliked, setShowDisliked] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [maxDistance, setMaxDistance] = useState<number | null>(null) // null means "Any"
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -70,11 +74,21 @@ export default function Rotation() {
     
     // Search filter
     const query = searchQuery.toLowerCase().trim()
-    if (!query) return true
-    
-    const matchesName = r.name.toLowerCase().includes(query)
-    const matchesTags = r.tags.some(tag => tag.toLowerCase().includes(query))
-    return matchesName || matchesTags
+    let matchesSearch = true
+    if (query) {
+      const matchesName = r.name.toLowerCase().includes(query)
+      const matchesTags = r.tags.some(tag => tag.toLowerCase().includes(query))
+      matchesSearch = matchesName || matchesTags
+    }
+    if (!matchesSearch) return false
+
+    // Proximity filter
+    if (maxDistance !== null && location && r.lat && r.lng) {
+      const dist = calculateDistance(location.lat, location.lng, r.lat, r.lng)
+      if (dist > maxDistance) return false
+    }
+
+    return true
   })
 
   if (loading) {
@@ -109,15 +123,34 @@ export default function Rotation() {
         </div>
       </div>
 
-      <div className="search-bar">
-        <span className="search-icon">🔍</span>
-        <input
-          type="text"
-          className="search-input"
-          placeholder="Filter restaurants by name or tag..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+      <div className="flex-row gap-sm align-center wrap" style={{ flexWrap: 'wrap' }}>
+        <div className="search-bar" style={{ flex: 1, minWidth: '200px' }}>
+          <span className="search-icon">🔍</span>
+          <input
+            type="text"
+            className="search-input"
+            placeholder="Filter restaurants..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
+        <div className="flex-row align-center gap-xs" style={{ background: 'var(--color-bg-secondary)', padding: '4px 12px', borderRadius: 'var(--radius-md)', height: '44px' }}>
+          <span style={{ fontSize: '1.2rem' }}>📍</span>
+          <select 
+            className="search-input" 
+            style={{ width: 'auto', background: 'transparent', border: 'none', padding: '0' }}
+            value={maxDistance || ''}
+            onChange={(e) => setMaxDistance(e.target.value ? Number(e.target.value) : null)}
+          >
+            <option value="">Any distance</option>
+            <option value="1">{"< 1 km"}</option>
+            <option value="3">{"< 3 km"}</option>
+            <option value="5">{"< 5 km"}</option>
+            <option value="10">{"< 10 km"}</option>
+            <option value="25">{"< 25 km"}</option>
+          </select>
+        </div>
       </div>
 
       {filtered.length === 0 ? (
@@ -143,6 +176,11 @@ export default function Rotation() {
                   <div className="rotation-card__name">
                     {restaurant.is_disliked && '👎 '}
                     {restaurant.name}
+                    {location && restaurant.lat && restaurant.lng && (
+                      <span className="tag tag--accent" style={{ marginLeft: '8px', fontSize: '0.7rem' }}>
+                        {calculateDistance(location.lat, location.lng, restaurant.lat, restaurant.lng).toFixed(1)} km
+                      </span>
+                    )}
                   </div>
                   {restaurant.address && (
                     <div className="rotation-card__address" style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)', marginBottom: 'var(--spacing-xs)' }}>

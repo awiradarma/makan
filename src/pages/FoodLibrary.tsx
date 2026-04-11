@@ -2,16 +2,20 @@ import { useEffect, useState, useMemo } from 'react'
 import { collection, query, where, onSnapshot, doc, updateDoc, deleteField } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useProfile } from '@/contexts/ProfileContext'
+import { useLocation } from '@/contexts/LocationContext'
 import { toggleRestaurantPreference } from '@/lib/preferences'
 import { TagInput } from '@/components/TagInput'
+import { calculateDistance } from '@/lib/geocoding'
 import type { FoodItem, Restaurant } from '@/types'
 
 type ViewMode = 'restaurant' | 'item'
 
 export default function FoodLibrary() {
   const { activeProfile, activeMember } = useProfile()
+  const { location } = useLocation()
   const [viewMode, setViewMode] = useState<ViewMode>('restaurant')
   const [searchQuery, setSearchQuery] = useState('')
+  const [sortBy, setSortBy] = useState<'name' | 'distance'>('name')
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [foodItems, setFoodItems] = useState<FoodItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -90,21 +94,38 @@ export default function FoodLibrary() {
       return matchedItems.sort((a, b) => a.name.localeCompare(b.name))
     }
 
-    // Group by restaurant
-    const groups: Record<string, { restaurant: Restaurant; items: FoodItem[] }> = {}
+    // Group by restaurant and calculate distance if possible
+    const groups: Record<string, { restaurant: Restaurant; items: FoodItem[]; distance?: number }> = {}
     
-    // 1. Initialize groups for all restaurants that match the search (or have matching items)
     restaurants.forEach(r => {
       const items = matchedItems.filter(i => i.restaurant_id === r.id)
       const matchesRestName = r.name.toLowerCase().includes(q)
       
       if (matchesRestName || items.length > 0) {
-        groups[r.id] = { restaurant: r, items: items.sort((a, b) => a.name.localeCompare(b.name)) }
+        let dist: number | undefined
+        if (location && r.lat && r.lng) {
+          dist = calculateDistance(location.lat, location.lng, r.lat, r.lng)
+        }
+        groups[r.id] = { 
+          restaurant: r, 
+          items: items.sort((a, b) => a.name.localeCompare(b.name)),
+          distance: dist
+        }
       }
     })
 
-    return Object.values(groups).sort((a, b) => a.restaurant.name.localeCompare(b.restaurant.name))
-  }, [viewMode, searchQuery, restaurants, foodItems])
+    const result = Object.values(groups)
+    
+    if (sortBy === 'distance' && location) {
+      return result.sort((a, b) => {
+        if (a.distance === undefined) return 1
+        if (b.distance === undefined) return -1
+        return a.distance - b.distance
+      })
+    }
+    
+    return result.sort((a, b) => a.restaurant.name.localeCompare(b.restaurant.name))
+  }, [viewMode, searchQuery, sortBy, restaurants, foodItems, location])
 
   if (loading) {
     return (
@@ -134,23 +155,47 @@ export default function FoodLibrary() {
         </div>
       </div>
 
-      <div className="search-bar">
-        <span className="search-icon">🔍</span>
-        <input
-          className="search-input"
-          placeholder={`Search ${viewMode}s, items, or tags...`}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+      <div className="flex-row gap-sm align-center wrap" style={{ flexWrap: 'wrap' }}>
+        <div className="search-bar" style={{ flex: 1, minWidth: '200px' }}>
+          <span className="search-icon">🔍</span>
+          <input
+            className="search-input"
+            placeholder={`Search ${viewMode}s, items, or tags...`}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
+        {viewMode === 'restaurant' && (
+          <div className="flex-row align-center gap-xs" style={{ background: 'var(--color-bg-secondary)', padding: '4px 12px', borderRadius: 'var(--radius-md)', height: '44px' }}>
+            <span style={{ fontSize: '1rem' }}>⇅</span>
+            <select 
+              className="search-input" 
+              style={{ width: 'auto', background: 'transparent', border: 'none', padding: '0', fontSize: 'var(--font-size-sm)' }}
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'name' | 'distance')}
+            >
+              <option value="name">Name</option>
+              {location && <option value="distance">Distance</option>}
+            </select>
+          </div>
+        )}
       </div>
 
       <div className="flex-col gap-lg">
         {viewMode === 'restaurant' ? (
-          (filteredData as any[]).map(({ restaurant, items }) => (
+          (filteredData as any[]).map(({ restaurant, items, distance }) => (
             <div key={restaurant.id} className="card flex-col gap-md">
               <div className="flex-row justify-between align-center">
                 <div className="flex-col gap-xs">
-                  <h3 className="card__title" style={{ fontSize: 'var(--font-size-lg)', margin: 0 }}>{restaurant.name}</h3>
+                  <div className="flex-row align-center gap-xs">
+                    <h3 className="card__title" style={{ fontSize: 'var(--font-size-lg)', margin: 0 }}>{restaurant.name}</h3>
+                    {distance !== undefined && (
+                      <span className="tag tag--accent" style={{ fontSize: '0.7rem' }}>
+                        {distance.toFixed(1)} km
+                      </span>
+                    )}
+                  </div>
                   <div className="flex-row align-center gap-xs">
                     <button 
                       className={`btn-pref ${restaurant.faved_by?.includes(activeMember || '') ? 'btn-pref--active' : ''}`}

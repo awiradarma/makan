@@ -3,6 +3,7 @@ import { Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { ProfileProvider, useProfile } from '@/contexts/ProfileContext'
+import { LocationProvider } from '@/contexts/LocationContext'
 import Login from '@/pages/Login'
 import Dashboard from '@/pages/Dashboard'
 import Rotation from '@/pages/Rotation'
@@ -106,78 +107,80 @@ function AppShell() {
 
   return (
     <ProfileProvider>
-      <div className="app-container">
-        {/* Top Bar */}
-        <header className="top-bar">
-          <div className="top-bar__logo" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
-            <span className="top-bar__logo-icon">🍜</span>
-            <span className="hide-mobile">Makan</span>
-          </div>
-          <div className="top-bar__actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <MemberSwitcher />
-            <ProfileSwitcher />
-            <ThemeToggle />
-          </div>
-        </header>
-
-        {/* Routes */}
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/rotation" element={<Rotation />} />
-          <Route path="/tradition" element={<SundayTradition />} />
-          <Route path="/library" element={<FoodLibrary />} />
-          <Route path="/add" element={<AddOrder />} />
-          <Route path="/order/:id" element={<OrderDetail />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-
-        {/* FAB */}
-        <button className="fab" onClick={() => navigate('/add')} aria-label="Add order">
-          +
-        </button>
-
-        {/* Bottom Nav */}
-        <nav className="bottom-nav">
-          <NavLink
-            to="/"
-            end
-            className={({ isActive }) =>
-              `bottom-nav__item ${isActive ? 'bottom-nav__item--active' : ''}`
-            }
-          >
-            <span className="bottom-nav__icon">🏠</span>
-            <span>Home</span>
-          </NavLink>
-          <NavLink
-            to="/rotation"
-            className={({ isActive }) =>
-              `bottom-nav__item ${isActive ? 'bottom-nav__item--active' : ''}`
-            }
-          >
-            <span className="bottom-nav__icon">🔄</span>
-            <span>Rotation</span>
-          </NavLink>
-          <NavLink
-            to="/library"
-            className={({ isActive }) =>
-              `bottom-nav__item ${isActive ? 'bottom-nav__item--active' : ''}`
-            }
-          >
-            <span className="bottom-nav__icon">📚</span>
-            <span>Library</span>
-          </NavLink>
-          <NavLink
-            to="/settings"
-            className={({ isActive }) =>
-              `bottom-nav__item ${isActive ? 'bottom-nav__item--active' : ''}`
-            }
-          >
-            <span className="bottom-nav__icon">⚙️</span>
-            <span>Settings</span>
-          </NavLink>
-        </nav>
-      </div>
+      <LocationProvider>
+        <div className="app-container">
+          {/* Top Bar */}
+          <header className="top-bar">
+            <div className="top-bar__logo" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
+              <span className="top-bar__logo-icon">🍜</span>
+              <span className="hide-mobile">Makan</span>
+            </div>
+            <div className="top-bar__actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <MemberSwitcher />
+              <ProfileSwitcher />
+              <ThemeToggle />
+            </div>
+          </header>
+  
+          {/* Routes */}
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/rotation" element={<Rotation />} />
+            <Route path="/tradition" element={<SundayTradition />} />
+            <Route path="/library" element={<FoodLibrary />} />
+            <Route path="/add" element={<AddOrder />} />
+            <Route path="/order/:id" element={<OrderDetail />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+  
+          {/* FAB */}
+          <button className="fab" onClick={() => navigate('/add')} aria-label="Add order">
+            +
+          </button>
+  
+          {/* Bottom Nav */}
+          <nav className="bottom-nav">
+            <NavLink
+              to="/"
+              end
+              className={({ isActive }) =>
+                `bottom-nav__item ${isActive ? 'bottom-nav__item--active' : ''}`
+              }
+            >
+              <span className="bottom-nav__icon">🏠</span>
+              <span>Home</span>
+            </NavLink>
+            <NavLink
+              to="/rotation"
+              className={({ isActive }) =>
+                `bottom-nav__item ${isActive ? 'bottom-nav__item--active' : ''}`
+              }
+            >
+              <span className="bottom-nav__icon">🔄</span>
+              <span>Rotation</span>
+            </NavLink>
+            <NavLink
+              to="/library"
+              className={({ isActive }) =>
+                `bottom-nav__item ${isActive ? 'bottom-nav__item--active' : ''}`
+              }
+            >
+              <span className="bottom-nav__icon">📚</span>
+              <span>Library</span>
+            </NavLink>
+            <NavLink
+              to="/settings"
+              className={({ isActive }) =>
+                `bottom-nav__item ${isActive ? 'bottom-nav__item--active' : ''}`
+              }
+            >
+              <span className="bottom-nav__icon">⚙️</span>
+              <span>Settings</span>
+            </NavLink>
+          </nav>
+        </div>
+      </LocationProvider>
     </ProfileProvider>
   )
 }

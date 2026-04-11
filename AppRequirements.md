@@ -36,8 +36,8 @@ Phase 1: Foundation & Data Enrichment [x]
 Phase 2: Personnel, Profiles & UI Expansion [x]
 - Family Members, Member Switcher, Individual Preferences, Theme Toggle.
 
-Phase 3: Knowledge & Decision Support [/]
+Phase 3: Knowledge & Decision Support [x]
 - Food Library (Restaurant/Item views, personal ratings). [x]
 - Sunday Tradition (Interactive Canvas spinning wheel). [x]
 - Offline Performance (IndexedDB). [x]
-- Smart Suggestions (Proximity-based recommendations). [ ]
+ - Smart Suggestions (Proximity-based recommendations). [x]

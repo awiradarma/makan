@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { collection, query, where, getDocs } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useProfile } from '@/contexts/ProfileContext'
+import { useLocation } from '@/contexts/LocationContext'
+import { calculateDistance } from '@/lib/geocoding'
 import type { Restaurant } from '@/types'
 
 const COLORS = [
@@ -12,12 +14,14 @@ const COLORS = [
 
 export default function SundayTradition() {
   const { activeProfile, activeMember } = useProfile()
+  const { location } = useLocation()
   const navigate = useNavigate()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [loading, setLoading] = useState(true)
   const [isSpinning, setIsSpinning] = useState(false)
   const [winner, setWinner] = useState<Restaurant | null>(null)
+  const [maxDistance, setMaxDistance] = useState<number | null>(null)
   
   // Animation state
   const rotationRef = useRef(0)
@@ -36,13 +40,22 @@ export default function SundayTradition() {
       const all = snap.docs.map(d => ({ id: d.id, ...d.data() } as Restaurant))
       
       // Filter by "Rotation" logic (not disliked, and potentially liked or neutral)
-      const inRotation = all.filter(r => !r.disliked_by?.includes(activeMember || ''))
+      let inRotation = all.filter(r => !r.disliked_by?.includes(activeMember || ''))
       
+      // Proximity filter
+      if (maxDistance !== null && location) {
+        inRotation = inRotation.filter(r => {
+          if (!r.lat || !r.lng) return false
+          const dist = calculateDistance(location.lat, location.lng, r.lat, r.lng)
+          return dist <= maxDistance
+        })
+      }
+
       setRestaurants(inRotation.slice(0, 12)) // Limit to 12 for good wheel visibility
       setLoading(false)
     }
     fetchRotation()
-  }, [activeProfile, activeMember])
+  }, [activeProfile, activeMember, location, maxDistance])
 
   const drawWheel = useCallback(() => {
     const canvas = canvasRef.current
@@ -133,6 +146,23 @@ export default function SundayTradition() {
       <div className="section-header align-center">
         <h2 className="section-title">Sunday Tradition</h2>
         <p className="section-subtitle">Let the wheel decide your next feast</p>
+        
+        <div className="flex-row align-center gap-xs mt-lg" style={{ background: 'var(--color-bg-secondary)', padding: '4px 12px', borderRadius: 'var(--radius-md)' }}>
+          <span style={{ fontSize: '1.2rem' }}>📍</span>
+          <select 
+            className="search-input" 
+            style={{ width: 'auto', background: 'transparent', border: 'none', padding: '0', fontSize: 'var(--font-size-sm)' }}
+            value={maxDistance || ''}
+            onChange={(e) => setMaxDistance(e.target.value ? Number(e.target.value) : null)}
+          >
+            <option value="">Any distance</option>
+            <option value="1">{"< 1 km"}</option>
+            <option value="3">{"< 3 km"}</option>
+            <option value="5">{"< 5 km"}</option>
+            <option value="10">{"< 10 km"}</option>
+            <option value="25">{"< 25 km"}</option>
+          </select>
+        </div>
       </div>
 
       <div className="wheel-container" style={{ position: 'relative' }}>
@@ -170,6 +200,11 @@ export default function SundayTradition() {
             <div className="winner-card__confetti">🎉</div>
             <h2 className="winner-card__title">The winner is...</h2>
             <div className="winner-card__name">{winner.name}</div>
+            {location && winner.lat && winner.lng && (
+              <div className="tag tag--accent" style={{ marginTop: '-8px' }}>
+                📍 {calculateDistance(location.lat, location.lng, winner.lat, winner.lng).toFixed(1)} km away
+              </div>
+            )}
             <div className="flex-row gap-md">
               <button 
                 className="btn btn--primary" 

@@ -191,7 +191,7 @@ export default function Dashboard() {
             collection(db, 'food_items'),
             where('profile_id', '==', activeProfile.id),
             orderBy('order_count', 'desc'),
-            limit(30)
+            limit(100)
           )
           const snapItems = await getDocs(qItems)
           const allItems = snapItems.docs.map(d => ({ id: d.id, ...d.data() } as any))

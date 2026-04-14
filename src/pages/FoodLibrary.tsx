@@ -305,16 +305,18 @@ export default function FoodLibrary() {
           (filteredData as any[]).map(({ restaurant, items, distance }) => (
             <div key={restaurant.id} className="card flex-col gap-md">
               <div className="flex-row justify-between align-center">
-                <div className="flex-col gap-xs">
+              <div className="flex-row justify-between align-start gap-md">
+                <div className="flex-col gap-xs" style={{ flex: 1, minWidth: 0 }}>
                   <div className="flex-row align-center gap-xs">
-                    <h3 className="card__title" style={{ fontSize: 'var(--font-size-lg)', margin: 0 }}>{restaurant.name}</h3>
+                    <h3 className="card__title text-truncate" style={{ fontSize: 'var(--font-size-lg)', margin: 0 }}>{restaurant.name}</h3>
                     {distance !== undefined && (
-                      <span className="tag tag--accent" style={{ fontSize: '0.7rem' }}>
+                      <span className="tag tag--accent" style={{ fontSize: '0.7rem', flexShrink: 0 }}>
                         {formatDistance(distance, distanceUnit)}
                       </span>
                     )}
                   </div>
-                  <div className="preference-controls">
+                  
+                  <div className="preference-controls" style={{ marginTop: '2px' }}>
                     <div className="preference-controls__emojis">
                       <button 
                         className={`btn-pref ${restaurant.faved_by?.includes(activeMember || '') ? 'btn-pref--active' : ''}`}
@@ -332,15 +334,14 @@ export default function FoodLibrary() {
                       </button>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex-col gap-xs">
                   {restaurant.address && (
-                    <div className="flex-row align-center gap-xs mini-meta">
-                      <span>📍</span>
+                    <div className="flex-row align-center gap-xs mini-meta mt-xs">
+                      <span style={{ flexShrink: 0 }}>📍</span>
                       <span className="text-truncate">{restaurant.address}</span>
                     </div>
                   )}
+
                   {restaurant.tags && restaurant.tags.length > 0 && (
                     <div className="flex-row gap-xs wrap mt-xs">
                     {restaurant.tags.map((tag: string) => (
@@ -350,40 +351,43 @@ export default function FoodLibrary() {
                   )}
                 </div>
                 
-                <div className="flex-row gap-sm align-center">
+                <div className="flex-col gap-sm align-end" style={{ flexShrink: 0 }}>
                   <span className="tag tag--muted">{items.length} items</span>
-                  {!mergeSource && !editingRestId && (
-                    <button 
-                      className="btn btn--ghost" 
-                      style={{ padding: '4px 8px', fontSize: '10px', textTransform: 'uppercase' }}
-                      onClick={() => startEditing(restaurant)}
-                    >
-                      Edit
-                    </button>
-                  )}
-                  {mergeSource ? (
-                    restaurant.id !== mergeSource.id && (
+                  <div className="flex-row gap-xs wrap justify-end">
+                    {!mergeSource && !editingRestId && (
                       <button 
-                        className={`btn ${confirmTargetId === restaurant.id ? 'btn--accent' : 'btn--primary'}`} 
-                        style={{ padding: '4px 12px', fontSize: '12px' }}
-                        onClick={() => handleMerge(restaurant)}
-                        disabled={isMerging}
+                        className="btn btn--ghost" 
+                        style={{ padding: '4px 8px', fontSize: '10px', textTransform: 'uppercase' }}
+                        onClick={() => startEditing(restaurant)}
                       >
-                        {confirmTargetId === restaurant.id ? 'Confirm?' : 'Merge Here'}
+                        Edit
                       </button>
-                    )
-                  ) : (
-                    !editingRestId && (
-                    <button 
-                      className="btn btn--ghost" 
-                      style={{ padding: '4px 8px', fontSize: '10px', textTransform: 'uppercase' }}
-                      onClick={() => setMergeSource(restaurant)}
-                    >
-                      Merge
-                    </button>
-                    )
-                  )}
+                    )}
+                    {mergeSource ? (
+                      restaurant.id !== mergeSource.id && (
+                        <button 
+                          className={`btn ${confirmTargetId === restaurant.id ? 'btn--accent' : 'btn--primary'}`} 
+                          style={{ padding: '4px 12px', fontSize: '12px' }}
+                          onClick={() => handleMerge(restaurant)}
+                          disabled={isMerging}
+                        >
+                          {confirmTargetId === restaurant.id ? 'Confirm?' : 'Merge Here'}
+                        </button>
+                      )
+                    ) : (
+                      !editingRestId && (
+                      <button 
+                        className="btn btn--ghost" 
+                        style={{ padding: '4px 8px', fontSize: '10px', textTransform: 'uppercase' }}
+                        onClick={() => setMergeSource(restaurant)}
+                      >
+                        Merge
+                      </button>
+                      )
+                    )}
+                  </div>
                 </div>
+              </div>
               </div>
               
               {editingRestId === restaurant.id && (

@@ -1019,11 +1019,19 @@ a:hover {
 .flex-col {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .flex-row {
   display: flex;
   flex-direction: row;
+  min-width: 0;
+}
+
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .justify-between { justify-content: space-between; }

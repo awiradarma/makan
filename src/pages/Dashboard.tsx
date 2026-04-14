@@ -176,25 +176,28 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (viewMode === 'insights' && activeProfile) {
-      // Fetch insights data
       const fetchInsights = async () => {
-        const qRest = query(
-          collection(db, 'restaurants'),
-          where('profile_id', '==', activeProfile.id),
-          orderBy('order_count', 'desc'),
-          limit(10)
-        )
-        const snapRest = await getDocs(qRest)
-        setTopRestaurants(snapRest.docs.map(d => ({ id: d.id, ...d.data() } as Restaurant)))
+        try {
+          const qRest = query(
+            collection(db, 'restaurants'),
+            where('profile_id', '==', activeProfile.id),
+            orderBy('order_count', 'desc'),
+            limit(10)
+          )
+          const snapRest = await getDocs(qRest)
+          setTopRestaurants(snapRest.docs.map(d => ({ id: d.id, ...d.data() } as Restaurant)))
 
-        const qItems = query(
-          collection(db, 'food_items'),
-          where('profile_id', '==', activeProfile.id),
-          orderBy('order_count', 'desc'),
-          limit(10)
-        )
-        const snapItems = await getDocs(qItems)
-        setTopFoodItems(snapItems.docs.map(d => ({ id: d.id, ...d.data() })))
+          const qItems = query(
+            collection(db, 'food_items'),
+            where('profile_id', '==', activeProfile.id),
+            orderBy('order_count', 'desc'),
+            limit(10)
+          )
+          const snapItems = await getDocs(qItems)
+          setTopFoodItems(snapItems.docs.map(d => ({ id: d.id, ...d.data() } as any)))
+        } catch (err) {
+          console.error('Error fetching insights:', err)
+        }
       }
       fetchInsights()
     }

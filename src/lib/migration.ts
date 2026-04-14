@@ -177,6 +177,7 @@ export async function syncRestaurantDates(profileId: string) {
     const currentData = restSnap.exists() ? restSnap.data() : null
     
     const updates: any = {
+      profile_id: profileId, // Explicitly set profile_id
       last_ordered_at: Timestamp.fromDate(stats.last_ordered_at),
       order_count: stats.order_count,
       updated_at: serverTimestamp(),

@@ -299,6 +299,24 @@ export default function Settings() {
           disabled={!activeProfile}
           onClick={async () => {
             if (!activeProfile) return
+            const loadingToast = toast.loading('Populating food items from history...')
+            try {
+              const { migrateExistingOrdersToFoodItems } = await import('@/lib/migration')
+              const count = await migrateExistingOrdersToFoodItems(activeProfile.id)
+              toast.success(`Successfully populated ${count} food items!`, { id: loadingToast })
+            } catch (err) {
+              console.error('Populate error:', err)
+              toast.error('Failed to populate items', { id: loadingToast })
+            }
+          }}
+        >
+          🍜 Populate Food Item Stats
+        </button>
+        <button 
+          className="btn btn--secondary" 
+          disabled={!activeProfile}
+          onClick={async () => {
+            if (!activeProfile) return
             const loadingToast = toast.loading('Geocoding missing restaurant locations...')
             try {
               const { geocodeExistingRestaurants } = await import('@/lib/migration')

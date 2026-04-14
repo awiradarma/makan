@@ -128,7 +128,7 @@ export async function syncRestaurantDates(profileId: string) {
   const q = query(ordersRef, where('profile_id', '==', profileId), where('status', '==', 'confirmed'))
   const querySnapshot = await getDocs(q)
   
-  const restaurantStats: Record<string, { last_ordered_at: Date, order_count: number, name: string }> = {}
+  const restaurantStats: Record<string, { last_ordered_at: Date, order_count: number, name: string, tags: Set<string> }> = {}
   
   querySnapshot.docs.forEach(orderDoc => {
     const data = orderDoc.data()
@@ -149,13 +149,21 @@ export async function syncRestaurantDates(profileId: string) {
       restaurantStats[restId] = {
         name: data.restaurant_name.trim(),
         last_ordered_at: orderedAt,
-        order_count: 0
+        order_count: 0,
+        tags: new Set<string>()
       }
     }
     
     restaurantStats[restId].order_count++
     if (orderedAt > restaurantStats[restId].last_ordered_at) {
       restaurantStats[restId].last_ordered_at = orderedAt
+    }
+    
+    // Aggregate tags for fallback
+    if (data.items) {
+      data.items.forEach((it: any) => {
+        it.tags?.forEach((t: string) => restaurantStats[restId].tags?.add(t))
+      })
     }
   })
 
@@ -165,11 +173,21 @@ export async function syncRestaurantDates(profileId: string) {
   
   for (const [id, stats] of entries) {
     const restRef = doc(db, 'restaurants', id)
-    batch.update(restRef, {
+    const restSnap = await getDoc(restRef)
+    const currentData = restSnap.exists() ? restSnap.data() : null
+    
+    const updates: any = {
       last_ordered_at: Timestamp.fromDate(stats.last_ordered_at),
       order_count: stats.order_count,
       updated_at: serverTimestamp(),
-    })
+    }
+    
+    // If restaurant has no tags, use aggregated ones
+    if (stats.tags && stats.tags.size > 0 && (!currentData || !currentData.tags || currentData.tags.length === 0)) {
+      updates.tags = Array.from(stats.tags)
+    }
+
+    batch.set(restRef, updates, { merge: true })
   }
   
   await batch.commit()

@@ -333,6 +333,22 @@ export default function FoodLibrary() {
                     </div>
                   </div>
                 </div>
+
+                <div className="flex-col gap-xs">
+                  {restaurant.address && (
+                    <div className="flex-row align-center gap-xs mini-meta">
+                      <span>📍</span>
+                      <span className="text-truncate">{restaurant.address}</span>
+                    </div>
+                  )}
+                  {restaurant.tags && restaurant.tags.length > 0 && (
+                    <div className="flex-row gap-xs wrap mt-xs">
+                    {restaurant.tags.map((tag: string) => (
+                      <span key={tag} className="tag tag--muted">{tag}</span>
+                    ))}
+                    </div>
+                  )}
+                </div>
                 
                 <div className="flex-row gap-sm align-center">
                   <span className="tag tag--muted">{items.length} items</span>

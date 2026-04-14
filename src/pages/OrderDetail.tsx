@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { doc, getDoc, updateDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore'
+import { doc, getDoc, updateDoc, setDoc, serverTimestamp, Timestamp, increment } from 'firebase/firestore'
 import { toast } from 'react-hot-toast'
 import { db } from '@/lib/firebase'
 import { updateFoodItems } from '@/lib/foodItems'
@@ -51,7 +51,19 @@ export default function OrderDetail() {
           const restId = `${data.profile_id}_${data.restaurant_name.trim().toLowerCase()}`
           const restSnap = await getDoc(doc(db, 'restaurants', restId))
           if (restSnap.exists()) {
-            setRestaurantTags(restSnap.data().tags || [])
+            const restData = restSnap.data()
+            const existingTags = restData.tags || []
+            if (existingTags.length > 0) {
+              setRestaurantTags(existingTags)
+            } else if (data.items) {
+              // Fallback to item tags if restaurant has none
+              const itemTags = Array.from(new Set(data.items.flatMap(it => it.tags || [])))
+              setRestaurantTags(itemTags)
+            }
+          } else if (data.items) {
+            // New restaurant, pre-fill from items
+            const itemTags = Array.from(new Set(data.items.flatMap(it => it.tags || [])))
+            setRestaurantTags(itemTags)
           }
         } else {
           toast.error('Order not found')
@@ -126,7 +138,10 @@ export default function OrderDetail() {
           updates.last_ordered_at = Timestamp.fromDate(newOrderDate)
         }
         
-        await updateDoc(restRef, updates)
+        await updateDoc(restRef, {
+          ...updates,
+          order_count: increment(1)
+        })
       } else {
         await setDoc(restRef, {
           ...restData,

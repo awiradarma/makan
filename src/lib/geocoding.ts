@@ -6,12 +6,13 @@ function cleanAddress(address: string): string {
   let cleaned = address;
   
   // Remove Suite, Apt, Unit, Ste, #, etc.
-  // Patterns like "Suite 100", "Ste 100", "Apt 5", "Unit B", "#101"
-  cleaned = cleaned.replace(/(suite|ste|apt|atp|unit|room|floor|fl|#)\.?\s*[a-z0-9-]+/gi, '');
+  // Expanded to handle full words and common abbreviations better
+  // We use \b to match word boundaries and handle cases like "Suite 100" but not "Suitcase"
+  cleaned = cleaned.replace(/\b(suite|ste|apt|atp|unit|room|floor|fl|level|building|bldg|#)\.?\s*[a-z0-9-]+/gi, '');
   
   // Remove Indonesian "No. 123", "Blok A", etc.
-  cleaned = cleaned.replace(/no\.?\s*[0-9-]+/gi, '');
-  cleaned = cleaned.replace(/blok\s*[a-z0-9-]+/gi, '');
+  cleaned = cleaned.replace(/\bno\.?\s*[0-9-]+/gi, '');
+  cleaned = cleaned.replace(/\bblok\s*[a-z0-9-]+/gi, '');
   
   // Remove multiple spaces and trim
   cleaned = cleaned.replace(/\s\s+/g, ' ').trim();
@@ -73,29 +74,34 @@ export async function geocodeAddress(address: string): Promise<{ lat: number; ln
     return null;
   }
 
-  // Attempt 1: Original address with country constraint
-  let result = await attemptGeocode(originalAddress, { countrycodes: 'id' });
+  // Attempt 1: Original address (raw)
+  let result = await attemptGeocode(originalAddress);
   if (result) return result;
 
-  // Attempt 2: Cleaned address with "Indonesia" appended
-  let queryWithCountry = cleanedAddress;
-  if (!cleanedAddress.toLowerCase().includes('indonesia')) {
-    queryWithCountry = `${cleanedAddress}, Indonesia`;
-  }
-  result = await attemptGeocode(queryWithCountry);
+  // Attempt 2: Cleaned address
+  result = await attemptGeocode(cleanedAddress);
   if (result) return result;
 
-  // Attempt 3: If we have a postal code, try a structured search
-  if (postalCode) {
-    result = await attemptGeocode(cleanedAddress, { postalcode: postalCode, countrycodes: 'id' });
+  // Attempt 3: If it looks like US (State abbreviations or Zip Code pattern)
+  const looksUS = /\b(AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|USA)\b/i.test(originalAddress);
+  if (looksUS) {
+    result = await attemptGeocode(cleanedAddress, { countrycodes: 'us' });
     if (result) return result;
   }
 
-  // Attempt 4: Fallback - Street and City only
-  const segments = originalAddress.split(',').map(s => s.trim());
-  if (segments.length > 2) {
-    const fallbackQuery = `${segments[0]}, ${segments[segments.length - 1]}, Indonesia`;
-    result = await attemptGeocode(fallbackQuery, { countrycodes: 'id' });
+  // Attempt 4: If it looks Indonesian (City names or 5-digit zip with ID hint)
+  const looksID = /jakarta|bali|denpasar|bandung|surabaya|yogyakarta|indonesia/i.test(originalAddress) || postalCode;
+  if (looksID) {
+    result = await attemptGeocode(cleanedAddress, { countrycodes: 'id' });
+    if (result) return result;
+  }
+
+  // Attempt 5: Fallback - components only
+  const segments = cleanedAddress.split(',').map(s => s.trim());
+  if (segments.length >= 2) {
+    // Try just first and last meaningful segment
+    const minimalQuery = `${segments[0]}, ${segments[segments.length - 1]}`;
+    result = await attemptGeocode(minimalQuery);
     if (result) return result;
   }
 

@@ -30,6 +30,7 @@ export default function OrderDetail() {
   const [restaurantTags, setRestaurantTags] = useState<string[]>([])
   const [items, setItems] = useState<OrderItem[]>([])
   const [orderedAt, setOrderedAt] = useState('')
+  const [totalAmount, setTotalAmount] = useState(0)
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(true)
 
   useEffect(() => {
@@ -49,6 +50,7 @@ export default function OrderDetail() {
           setRestaurantName(data.restaurant_name)
           setRestaurantAddress(data.restaurant_address || '')
           setItems(data.items?.map(item => ({ ...item, tags: item.tags || [] })) || [])
+          setTotalAmount(data.total_amount)
           setOrderedAt(date.toISOString().split('T')[0])
 
           // Fetch restaurant tags
@@ -86,6 +88,7 @@ export default function OrderDetail() {
         restaurant_name: restaurantName,
         restaurant_address: restaurantAddress,
         items: items,
+        total_amount: totalAmount,
         ordered_at: Timestamp.fromDate(new Date(orderedAt)),
         updated_at: serverTimestamp(),
       }
@@ -145,6 +148,7 @@ export default function OrderDetail() {
         restaurant_name: restaurantName,
         restaurant_address: restaurantAddress,
         items: items,
+        total_amount: totalAmount,
         ordered_at: new Date(orderedAt),
         status: confirmReview ? 'confirmed' : order.status,
       }
@@ -309,7 +313,27 @@ export default function OrderDetail() {
 
         <div className="order-card__total" style={{ fontSize: 'var(--font-size-lg)' }}>
           <span>Total</span>
-          <span>{formatCurrency(order.total_amount, order.currency)}</span>
+          <div className="flex-row gap-sm align-center">
+            <div style={{ fontSize: 'var(--font-size-sm)', opacity: 0.7 }}>
+              {order.currency === 'IDR' ? 'Rp' : '$'}
+            </div>
+            <input
+              type="number"
+              className="form-input"
+              style={{ width: '120px', textAlign: 'right', padding: '4px 8px' }}
+              value={totalAmount}
+              onChange={(e) => setTotalAmount(parseFloat(e.target.value) || 0)}
+              step="0.01"
+            />
+            <button 
+              className="btn btn--ghost" 
+              style={{ padding: '4px', fontSize: '10px' }}
+              onClick={() => setTotalAmount(items.reduce((sum, i) => sum + (i.price || 0), 0))}
+              title="Recalculate from items"
+            >
+              🔄
+            </button>
+          </div>
         </div>
       </div>
 

@@ -5,7 +5,7 @@ import { useProfile } from '@/contexts/ProfileContext'
 import { useLocation } from '@/contexts/LocationContext'
 import { toggleRestaurantPreference } from '@/lib/preferences'
 import { TagInput } from '@/components/TagInput'
-import { calculateDistance, formatDistance } from '@/lib/geocoding'
+import { calculateDistance, formatDistance, geocodeAddress } from '@/lib/geocoding'
 import { toast } from 'react-hot-toast'
 import type { FoodItem, Restaurant } from '@/types'
 
@@ -22,9 +22,20 @@ export default function FoodLibrary() {
   const [loading, setLoading] = useState(true)
   
   // Merge state
+  const [confirmTargetId, setConfirmTargetId] = useState<string | null>(null)
+  
+  // Merge state
   const [mergeSource, setMergeSource] = useState<Restaurant | null>(null)
   const [isMerging, setIsMerging] = useState(false)
-  const [confirmTargetId, setConfirmTargetId] = useState<string | null>(null)
+  
+  // Restaurant edit state
+  const [editingRestId, setEditingRestId] = useState<string | null>(null)
+  const [editRestName, setEditRestName] = useState('')
+  const [editRestAddress, setEditRestAddress] = useState('')
+  const [editRestTags, setEditRestTags] = useState<string[]>([])
+  const [editRestLat, setEditRestLat] = useState<number | null>(null)
+  const [editRestLng, setEditRestLng] = useState<number | null>(null)
+  const [isSavingRest, setIsSavingRest] = useState(false)
 
   useEffect(() => {
     if (!activeProfile) return
@@ -123,6 +134,52 @@ export default function FoodLibrary() {
       toast.error('Failed to merge restaurants', { id: loadingToast })
     } finally {
       setIsMerging(false)
+    }
+  }
+
+  const startEditing = (r: Restaurant) => {
+    setEditingRestId(r.id)
+    setEditRestName(r.name)
+    setEditRestAddress(r.address || '')
+    setEditRestTags(r.tags || [])
+    setEditRestLat(r.lat || null)
+    setEditRestLng(r.lng || null)
+  }
+
+  const handleUpdateRestaurant = async () => {
+    if (!editingRestId) return
+    setIsSavingRest(true)
+    const loadingToast = toast.loading('Updating restaurant...')
+    try {
+      const updates: any = {
+        name: editRestName,
+        address: editRestAddress,
+        tags: editRestTags,
+        lat: editRestLat,
+        lng: editRestLng,
+        updated_at: new Date()
+      }
+      await updateDoc(doc(db, 'restaurants', editingRestId), updates)
+      toast.success('Restaurant updated', { id: loadingToast })
+      setEditingRestId(null)
+    } catch (err) {
+      console.error('Error updating restaurant:', err)
+      toast.error('Failed to update restaurant', { id: loadingToast })
+    } finally {
+      setIsSavingRest(false)
+    }
+  }
+
+  const handleReGeocode = async () => {
+    if (!editRestAddress) return
+    const loadingToast = toast.loading('Geocoding address...')
+    const coords = await geocodeAddress(editRestAddress)
+    if (coords) {
+      setEditRestLat(coords.lat)
+      setEditRestLng(coords.lng)
+      toast.success('Address geocoded!', { id: loadingToast })
+    } else {
+      toast.error('Could not geocode address', { id: loadingToast })
     }
   }
 
@@ -279,6 +336,15 @@ export default function FoodLibrary() {
                 
                 <div className="flex-row gap-sm align-center">
                   <span className="tag tag--muted">{items.length} items</span>
+                  {!mergeSource && !editingRestId && (
+                    <button 
+                      className="btn btn--ghost" 
+                      style={{ padding: '4px 8px', fontSize: '10px', textTransform: 'uppercase' }}
+                      onClick={() => startEditing(restaurant)}
+                    >
+                      Edit
+                    </button>
+                  )}
                   {mergeSource ? (
                     restaurant.id !== mergeSource.id && (
                       <button 
@@ -291,6 +357,7 @@ export default function FoodLibrary() {
                       </button>
                     )
                   ) : (
+                    !editingRestId && (
                     <button 
                       className="btn btn--ghost" 
                       style={{ padding: '4px 8px', fontSize: '10px', textTransform: 'uppercase' }}
@@ -298,10 +365,45 @@ export default function FoodLibrary() {
                     >
                       Merge
                     </button>
+                    )
                   )}
                 </div>
               </div>
               
+              {editingRestId === restaurant.id && (
+                <div className="mt-md flex-col gap-md library-item__edit-panel" style={{ padding: 'var(--spacing-md)', background: 'var(--color-bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-accent-soft)' }}>
+                  <div className="flex-col gap-xs">
+                    <label className="form-label">Restaurant Name</label>
+                    <input className="form-input" value={editRestName} onChange={e => setEditRestName(e.target.value)} />
+                  </div>
+                  <div className="flex-col gap-xs">
+                    <label className="form-label">Address</label>
+                    <div className="flex-row gap-xs">
+                      <input className="form-input" value={editRestAddress} onChange={e => setEditRestAddress(e.target.value)} />
+                      <button className="btn btn--secondary" style={{ padding: '0 12px' }} onClick={handleReGeocode} title="Re-geocode address">📍</button>
+                    </div>
+                  </div>
+                  <div className="flex-row gap-md">
+                    <div className="flex-col gap-xs" style={{ flex: 1 }}>
+                      <label className="form-label">Lat</label>
+                      <input type="number" className="form-input" value={editRestLat || ''} onChange={e => setEditRestLat(parseFloat(e.target.value) || null)} step="any" />
+                    </div>
+                    <div className="flex-col gap-xs" style={{ flex: 1 }}>
+                      <label className="form-label">Lng</label>
+                      <input type="number" className="form-input" value={editRestLng || ''} onChange={e => setEditRestLng(parseFloat(e.target.value) || null)} step="any" />
+                    </div>
+                  </div>
+                  <div className="flex-col gap-xs">
+                    <label className="form-label">Tags</label>
+                    <TagInput tags={editRestTags} onChange={setEditRestTags} />
+                  </div>
+                  <div className="flex-row gap-sm">
+                    <button className="btn btn--primary flex-1" onClick={handleUpdateRestaurant} disabled={isSavingRest}>Save Changes</button>
+                    <button className="btn btn--secondary" onClick={() => setEditingRestId(null)}>Cancel</button>
+                  </div>
+                </div>
+              )}
+
               <div className="flex-col gap-sm">
                 {items.length > 0 ? (
                   items.map((item: FoodItem) => (

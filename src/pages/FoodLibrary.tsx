@@ -504,6 +504,20 @@ function ItemRow({ item, onUpdate, showRestaurant, activeMember }: { item: FoodI
               ))}
             </div>
           </div>
+
+          <div className="flex-row align-center gap-sm mb-sm">
+            <input 
+              type="checkbox" 
+              id={`staple-${item.id}`}
+              checked={!!item.is_staple}
+              onChange={(e) => onUpdate(item.id, { is_staple: e.target.checked })}
+              style={{ width: '16px', height: '16px' }}
+            />
+            <label htmlFor={`staple-${item.id}`} className="form-label" style={{ margin: 0, cursor: 'pointer', fontSize: '13px' }}>
+              Staple Item (hide from favorite rankings)
+            </label>
+          </div>
+
           <div className="flex-col gap-xs">
             <label className="form-label">Tags</label>
             <TagInput 

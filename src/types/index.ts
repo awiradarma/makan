@@ -61,6 +61,7 @@ export interface FoodItem {
   tags: string[]
   faved_by?: string[]
   disliked_by?: string[]
+  is_staple?: boolean
 }
 
 export interface ParsedReceipt {

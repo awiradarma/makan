@@ -191,10 +191,11 @@ export default function Dashboard() {
             collection(db, 'food_items'),
             where('profile_id', '==', activeProfile.id),
             orderBy('order_count', 'desc'),
-            limit(10)
+            limit(30)
           )
           const snapItems = await getDocs(qItems)
-          setTopFoodItems(snapItems.docs.map(d => ({ id: d.id, ...d.data() } as any)))
+          const allItems = snapItems.docs.map(d => ({ id: d.id, ...d.data() } as any))
+          setTopFoodItems(allItems.filter((it: any) => !it.is_staple).slice(0, 10))
         } catch (err) {
           console.error('Error fetching insights:', err)
         }

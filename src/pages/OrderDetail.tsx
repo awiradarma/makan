@@ -9,12 +9,6 @@ import { TagInput } from '@/components/TagInput'
 import { geocodeAddress } from '@/lib/geocoding'
 import type { Order, OrderItem } from '@/types'
 
-function formatCurrency(amount: number, currency: string) {
-  if (currency === 'IDR') {
-    return `Rp ${amount.toLocaleString('id-ID')}`
-  }
-  return `$${amount.toFixed(2)}`
-}
 
 export default function OrderDetail() {
   const { id } = useParams()

@@ -1042,6 +1042,8 @@ a:hover {
   justify-content: center;
 }
 
+.wrap { flex-wrap: wrap; }
+
 .gap-sm { gap: var(--spacing-sm); }
 .gap-md { gap: var(--spacing-md); }
 .gap-lg { gap: var(--spacing-lg); }

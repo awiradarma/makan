@@ -1,4 +1,4 @@
-import { collection, getDocs, query, where, writeBatch, doc, Timestamp, serverTimestamp, updateDoc } from 'firebase/firestore'
+import { collection, getDocs, getDoc, query, where, writeBatch, doc, Timestamp, serverTimestamp, updateDoc } from 'firebase/firestore'
 import { db } from './firebase'
 import { normalizeItemName } from './foodItems'
 import type { Order } from '@/types'

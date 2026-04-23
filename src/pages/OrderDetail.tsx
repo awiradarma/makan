@@ -106,6 +106,8 @@ export default function OrderDetail() {
       await updateDoc(doc(db, 'orders', id), firestoreData)
       
       // Upsert restaurant info
+      const originalRestaurantName = order.restaurant_name;
+      const isRestaurantChanged = originalRestaurantName !== restaurantName.trim();
       const restId = `${order.profile_id}_${restaurantName.trim().toLowerCase()}`
       const restRef = doc(db, 'restaurants', restId)
       const restSnap = await getDoc(restRef)
@@ -138,10 +140,11 @@ export default function OrderDetail() {
           updates.last_ordered_at = Timestamp.fromDate(newOrderDate)
         }
         
-        await updateDoc(restRef, {
-          ...updates,
-          order_count: increment(1)
-        })
+        if (isRestaurantChanged) {
+          updates.order_count = increment(1)
+        }
+        
+        await updateDoc(restRef, updates)
       } else {
         await setDoc(restRef, {
           ...restData,
@@ -150,6 +153,20 @@ export default function OrderDetail() {
           order_count: 1,
           last_ordered_at: Timestamp.fromDate(new Date(orderedAt)),
         })
+      }
+
+      if (isRestaurantChanged) {
+        const oldRestId = `${order.profile_id}_${originalRestaurantName.trim().toLowerCase()}`
+        const oldRestRef = doc(db, 'restaurants', oldRestId)
+        const oldRestSnap = await getDoc(oldRestRef)
+        if (oldRestSnap.exists()) {
+          const oldData = oldRestSnap.data()
+          if (oldData.order_count > 0) {
+            await updateDoc(oldRestRef, {
+              order_count: increment(-1)
+            })
+          }
+        }
       }
 
       const fullUpdatedOrder: Order = { 
